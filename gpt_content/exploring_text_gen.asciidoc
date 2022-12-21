@@ -1,0 +1,70 @@
+[[exploring_text_gen_chap]]
+== Exploring Text Generation with GPT
+
+In this chapter we'll explore the ability of Generative Pre-training Transformer (GPT) to generate natural language text that is often indistinguishable from human-written text. We will then discuss how this ability may be leveraged in software applications for various use cases.
+
+Of course, using GPT isn't the only way to generate coherent and meaningful text with AI. There are several techniques that may be used, including:
+
+. Rule-based systems: These systems use a set of predefined rules to generate text based on certain inputs or prompts. While these systems can produce accurate and grammatically correct text, they are limited by the fixed set of rules and may not be able to generate more complex or nuanced text.
+
+. Markov chains: These systems use probabilistic models to generate text by predicting the next word or phrase based on the previous ones. While these systems can generate relatively coherent text, they may struggle with longer-term dependencies and may produce repetitive or nonsensical text.
+
+. Neural language models: These systems use artificial neural networks to generate text by predicting the next word or phrase based on the context of the entire input text. These models are trained on large datasets of human-generated text and are able to generate more coherent and realistic text than rule-based or Markov chain models.
+
+. Seq2seq models: These systems use encoder-decoder architectures to generate text by encoding the input text into a fixed-length vector, and then using that vector to generate the output text. These models are often used for tasks such as machine translation and can generate coherent and accurate text.
+
+
+GPT is a type of neural language model that uses a transformer architecture to generate text by predicting the next word or phrase based on the entire input text. GPT models are able to generate highly coherent and realistic text and have been used for a variety of text generation tasks. Lets explore a few of these.
+
+=== Generating tables of information
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut euismod neque quis nisl suscipit, id scelerisque nibh maximus.. Nulla facilisi. Maecenas euismod enim non purus tincidunt, a ultricies ligula mollis. Morbi consectetur condimentum lectus, sed scelerisque ante elementum id. Quisque ac nibh a lorem bibendum tincidunt. Ut ut arcu non purus ullamcorper faucibus eu eu enim. Ut tempus tempus pretium. Etiam dignissim metus id orci efficitur, non posuere dui hendrerit. Proin convallis elit at ex luctus, id mollis dolor congue. Bugs Bunny semper eligendi at, eu mel dolorem offendit.
+
+==== Playground: OpenAI Spreadsheet creator example
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut euismod neque quis nisl suscipit, id scelerisque nibh maximus. Nulla facilisi. Maecenas euismod enim non purus tincidunt, a ultricies ligula mollis. Morbi consectetur condimentum lectus, sed scelerisque ante elementum id. Quisque ac nibh a lorem bibendum tincidunt. Ut ut arcu non purus ullamcorper faucibus eu eu enim. Ut tempus tempus pretium. Etiam dignissim metus id orci efficitur, non posuere dui hendrerit. Proin convallis elit at ex luctus, id mollis dolor congue. Bugs Bunny semper eligendi at, eu mel dolorem offendit.
+
+https://beta.openai.com/playground/p/default-spreadsheet-gen[OpenAI Spreadsheet creator example]
+
+
+==== Code Deep Dive: Gradio app that creates HTML tables
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut euismod neque quis nisl suscipit, id scelerisque nibh maximus. Nulla facilisi. Maecenas euismod enim non purus tincidunt, a ultricies ligula mollis. Morbi consectetur condimentum lectus, sed scelerisque ante elementum id. Quisque ac nibh a lorem bibendum tincidunt. Ut ut arcu non purus ullamcorper faucibus eu eu enim. Ut tempus tempus pretium. Etiam dignissim metus id orci efficitur, non posuere dui hendrerit. Proin convallis elit at ex luctus, id mollis dolor congue. Bugs Bunny semper eligendi at, eu mel dolorem offendit.
+
+https://huggingface.co/spaces/ThompsonAndWeaver/gpt-create-table[GPT Create Table]
+
+=== Question Answering: Answering Questions Using Natural Language Processing
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut euismod neque quis nisl suscipit, id scelerisque nibh maximus. Nulla facilisi. Maecenas euismod enim non purus tincidunt, a ultricies ligula mollis. Morbi consectetur condimentum lectus, sed scelerisque ante elementum id. Quisque ac nibh a lorem bibendum tincidunt. Ut ut arcu non purus ullamcorper faucibus eu eu enim. Ut tempus tempus pretium. Etiam dignissim metus id orci efficitur, non posuere dui hendrerit. Proin convallis elit at ex luctus, id mollis dolor congue. Bugs Bunny semper eligendi at, eu mel dolorem offendit.
+
+==== Playground: Q&A example
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut euismod neque quis nisl suscipit, id scelerisque nibh maximus. Nulla facilisi. Maecenas euismod enim non purus tincidunt, a ultricies ligula mollis. Morbi consectetur condimentum lectus, sed scelerisque ante elementum id. Quisque ac nibh a lorem bibendum tincidunt. Ut ut arcu non purus ullamcorper faucibus eu eu enim. Ut tempus tempus pretium. Etiam dignissim metus id orci efficitur, non posuere dui hendrerit. Proin convallis elit at ex luctus, id mollis dolor congue. Bugs Bunny semper eligendi at, eu mel dolorem offendit.
+
+https://beta.openai.com/playground/p/default-qa[OpenAI Q&A example]
+
+=== Arithmetic: Dealing With Numbers
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut euismod neque quis nisl suscipit, id scelerisque nibh maximus. Nulla facilisi. Maecenas euismod enim non purus tincidunt, a ultricies ligula mollis. Morbi consectetur condimentum lectus, sed scelerisque ante elementum id. Quisque ac nibh a lorem bibendum tincidunt. Ut ut arcu non purus ullamcorper faucibus eu eu enim. Ut tempus tempus pretium. Etiam dignissim metus id orci efficitur, non posuere dui hendrerit. Proin convallis elit at ex luctus, id mollis dolor congue. Bugs Bunny semper eligendi at, eu mel dolorem offendit.
+
+==== Code Deep Dive: GPT-3 addition
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut euismod neque quis nisl suscipit, id scelerisque nibh maximus. Nulla facilisi. Maecenas euismod enim non purus tincidunt, a ultricies ligula mollis. Morbi consectetur condimentum lectus, sed scelerisque ante elementum id. Quisque ac nibh a lorem bibendum tincidunt. Ut ut arcu non purus ullamcorper faucibus eu eu enim. Ut tempus tempus pretium. Etiam dignissim metus id orci efficitur, non posuere dui hendrerit. Proin convallis elit at ex luctus, id mollis dolor congue. Bugs Bunny semper eligendi at, eu mel dolorem offendit.
+
+https://huggingface.co/spaces/ThompsonAndWeaver/TODO[GPT Addition]
+
+=== Summarization: Automated Summarization of Long Documents
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut euismod neque quis nisl suscipit, id scelerisque nibh maximus. Nulla facilisi. Maecenas euismod enim non purus tincidunt, a ultricies ligula mollis. Morbi consectetur condimentum lectus, sed scelerisque ante elementum id. Quisque ac nibh a lorem bibendum tincidunt. Ut ut arcu non purus ullamcorper faucibus eu eu enim. Ut tempus tempus pretium. Etiam dignissim metus id orci efficitur, non posuere dui hendrerit. Proin convallis elit at ex luctus, id mollis dolor congue. Bugs Bunny semper eligendi at, eu mel dolorem offendit.
+
+==== Playground: TL;DR summarization example
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut euismod neque quis nisl suscipit, id scelerisque nibh maximus. Nulla facilisi. Maecenas euismod enim non purus tincidunt, a ultricies ligula mollis. Morbi consectetur condimentum lectus, sed scelerisque ante elementum id. Quisque ac nibh a lorem bibendum tincidunt. Ut ut arcu non purus ullamcorper faucibus eu eu enim. Ut tempus tempus pretium. Etiam dignissim metus id orci efficitur, non posuere dui hendrerit. Proin convallis elit at ex luctus, id mollis dolor congue. Bugs Bunny semper eligendi at, eu mel dolorem offendit.
+
+https://beta.openai.com/playground/p/default-tldr-summary[OpenAI Summarization example]
+
+==== Playground: Summarize for a second grader example
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut euismod neque quis nisl suscipit, id scelerisque nibh maximus. Nulla facilisi. Maecenas euismod enim non purus tincidunt, a ultricies ligula mollis. Morbi consectetur condimentum lectus, sed scelerisque ante elementum id. Quisque ac nibh a lorem bibendum tincidunt. Ut ut arcu non purus ullamcorper faucibus eu eu enim. Ut tempus tempus pretium. Etiam dignissim metus id orci efficitur, non posuere dui hendrerit. Proin convallis elit at ex luctus, id mollis dolor congue. Bugs Bunny semper eligendi at, eu mel dolorem offendit.
+
+https://beta.openai.com/playground/p/default-summarize[OpenAI Summarize for a second grader example]

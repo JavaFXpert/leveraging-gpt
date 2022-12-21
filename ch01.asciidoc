@@ -1,0 +1,858 @@
+[[quantum_circuits_operations]]
+== Quantum Circuits and Operations
+
+In Qiskit, quantum programs are normally expressed with quantum circuits that contain quantum operations. Quantum circuits are represented by the +QuantumCircuit+ class, and quantum operations are represented by subclasses of the class [.keep-together]#+Instruction+#.
+
+[[constructing_quantum_circuits]]
+=== Constructing Quantum Circuits
+
+A quantum circuit may be created by supplying an argument that indicates the number of desired quantum wires (qubits) for that circuit. This is often supplied as an integer:
+
+[source,python]
+----
+from qiskit import QuantumCircuit
+QuantumCircuit(2)
+----
+
+Optionally, the number of desired classical wires (bits) may also be specified. The first argument refers to the number of quantum wires, and the second argument the number of classical wires:
+
+[source,python]
+----
+QuantumCircuit(2, 2)
+----
+
+The number of desired quantum and classical wires may also be expressed by supplying instances of +QuantumRegister+ and +ClassicalRegister+ as arguments to +QuantumCircuit+. These classes are addressed in <<quantum_reqister>> and <<classical_reqister>>.
+
+==== Using the QuantumCircuit Class
+
+The `QuantumCircuit` class contains a large number of methods and attributes. The purpose of many of its methods is to apply quantum operations to a quantum circuit. Most of its other methods and attributes either manipulate or report information about a quantum circuit.
+
+===== Commonly used gates
+
+<<single_qubit_gates_table>> contains some commonly used single-qubit gates and code examples. The variable +qc+ refers to an instance of +QuantumCircuit+ that contains at least four quantum wires.
+
+
+[[single_qubit_gates_table]]
+.Commonly used single-qubit gates in Qiskit
+[options="header"]
+|=======
+|Names|Example|Notes
+|*H, Hadamard*|+qc.h(0)+|Applies H gate to qubit 0. See <<hgate_class>>.
+|*I, Identity*|+qc.id(2)+ or +qc.i(2)+|Applies I gate to qubit 2. See <<igate_class>>.
+|*P, Phase*|+qc.p(math.pi/2,0)+|Applies P gate with π/2 phase rotation to qubit 0. See <<phasegate_class>>.
+|*RX*|+qc.rx(math.pi/4,2)+|Applies RX gate with π/4 rotation to qubit 2. See <<rxgate_class>>.
+|*RY*|+qc.ry(math.pi/8,0)+|Applies RY gate with π/8 rotation to qubit 0. See <<rygate_class>>.
+|*RZ*|+qc.rz(math.pi/2,1)+|Applies RZ gate with π/2 rotation to qubit 1. See <<rzgate_class>>.
+|*S*|+qc.s(3)+|Applies S gate to qubit 3. Equivalent to P gate with π/2 phase rotation. See <<sgate_class>>.
+|*S†*|+qc.sdg(3)+|Applies S† gate to qubit 3. Equivalent to P gate with 3π/2 phase rotation. See <<sdggate_class>>.
+|*SX*|+qc.sx(2)+|Applies SX (square root of X) gate to qubit 2. Equivalent to RX gate with π/2 rotation. See <<sxgate_class>>.
+|*T*|+qc.t(1)+|Applies T gate to qubit 1. Equivalent to P gate with π/4 phase rotation. See <<tgate_class>>.
+|*T†*|+qc.tdg(1)+|Applies T† gate to qubit 1. Equivalent to P gate with 7π/4 phase rotation. See <<tdggate_class>>.
+|*U*|+qc.u(math.pi/2,0,math.pi,1)+|Applies rotation with 3 Euler angles to qubit 1. See <<ugate_class>>.
+|*X*|+qc.x(3)+|Applies X gate to qubit 3. See <<xgate_class>>.
+|*Y*|+qc.y([0,2,3])+|Applies Y gates to qubits 0, 2, and 3. See <<ygate_class>>.
+|*Z*|+qc.z(2)+|Applies Z gate to qubit 2. Equivalent to P gate with π phase rotation. See <<zgate_class>>.
+|=======
+
+
+<<single_qubit_gates_circuit>> contains a nonsensical circuit with all of the single-qubit gate examples from <<single_qubit_gates_table>>.
+
+
+[[single_qubit_gates_circuit]]
+.Nonsensical circuit with single-qubit gate examples
+image::images/qkpg_0101.png[""]
+
+<<multi_qubit_gates_table>> contains some commonly used multiqubit gates and code examples. The variable +qc+ refers to an instance of +QuantumCircuit+ that contains at least four quantum wires.
+
+[[multi_qubit_gates_table]]
+.Commonly used multiqubit gates in Qiskit
+[options="header"]
+|=======
+|Names|Example|Notes
+|*CCX, Toffoli*|+qc.ccx(0,1,2)+|Applies the X gate to quantum wire 2, subject to the state of the control qubits on wires 0 and 1. See <<ccxgate_class>>.
+|*CH*|+qc.ch(0,1)+|Applies the H gate to quantum wire 1, subject to the state of the control qubit on wire 0. See <<chgate_class>>.
+|*CP, Control-Phase*|+qc.cp(math.pi/4,0,1)+|Applies the Phase gate to quantum wire 1, subject to the state of the control qubit on wire 0. See <<cphasegate_class>>.
+|*CRX, Control-RX*|+qc.crx(math.pi/2,2,3)+|Applies the RX gate to quantum wire 3, subject to the state of the control qubit on wire 2. See <<crxgate_class>>.
+|*CRY, Control-RY*|+qc.cry(math.pi/8,2,3)+|Applies the RY gate to quantum wire 3, subject to the state of the control qubit on wire 2. See <<crygate_class>>.
+|*CRZ*|+qc.crz(math.pi/4,0,1)+|Applies the RZ gate to quantum wire 1, subject to the state of the control qubit on wire 0. See <<crzgate_class>>.
+|*CSwap, Fredkin*|+qc.cswap(0,2,3)+ or +qc.fredkin(0,2,3)+|Swaps the qubit states of wires 2 and 3, subject to the state of the control qubit on wire 0. See <<cswapgate_class>>.
+|*CSX*|+qc.csx(0,1)+|Applies the SX (square root of X) gate to quantum wire 1, subject to the state of the control qubit on wire 0. See <<csxgate_class>>.
+|*CU*|+qc.cu(math.pi/2,0,math.pi,0,0,1)+|Applies the U gate with an additional global phase argument to quantum wire 1, subject to the state of the control qubit on wire 0. See <<cugate_class>>.
+|*CX, CNOT*|+qc.cx(2,3)+ or +qc.cnot(2,3)+|Applies the X gate to quantum wire 3, subject to the state of the control qubit on wire 2. See <<cxgate_class>>.
+|*CY, Control-Y*|+qc.cy(2,3)+|Applies the Y gate to quantum wire 3, subject to the state of the control qubit on wire 2. See <<cygate_class>>.
+|*CZ, Control-Z*|+qc.cz(1,2)+|Applies the Z gate to quantum wire 2, subject to the state of the control qubit on wire 1. See <<cygate_class>>.
+|*DCX*|+qc.dcx(2,3)+|Applies two CNOT gates whose control qubits are on wires 2 and 3. See <<dcxgate_class>>.
+|*iSwap*|+qc.iswap(0,1)+|Swaps the qubit states of wires 0 and 1, and changes the phase of the latexmath:[$\vert01\rangle$] and latexmath:[$\vert10\rangle$] amplitudes by i. See <<iswapgate_class>>.
+|*MCP, Multi-control phase*|+qc.mcp(math.pi/4, [0,1,2],3)+|Applies the Phase gate to quantum wire 3, subject to the state of the control qubits on wires 0, 1, and 2. See <<mcphasegate_class>>.
+|*MCX, Multi-control X*|+qc.mcx([0,1,2],3)+|Applies the X gate to quantum wire 3, subject to the state of the control qubits on wires 0, 1 and 2. See <<mcxgate_class>>.
+|*Swap*|+qc.swap(2,3)+|Swaps the qubit states of wires 2 and 3. See <<swapgate_class>>.
+|=======
+
+<<multi_qubit_gates_circuit>> contains a nonsensical circuit with all of the multi-qubit gate examples from <<multi_qubit_gates_table>>.
+
+[[multi_qubit_gates_circuit]]
+.Nonsensical circuit with multiqubit gate examples
+image::images/qkpg_0102.png[""]
+
+
+[[drawing_quantum_circuit]]
+===== Drawing a quantum circuit
+
+The `draw()` method draws a quantum circuit in various [.keep-together]#formats#.
+
+====== Using the draw() method
+
+The following code snippet uses the +draw()+ method in the default format:
+
+[source,python]
+----
+qc = QuantumCircuit(3)
+qc.h(0)
+qc.cx(0, 1)
+qc.cx(0, 2)
+qc.draw()
+----
+
+<<draw_example_circuit>> shows the drawn circuit.
+
+[[draw_example_circuit]]
+.Example circuit visualization using the `draw()` method
+image::images/qkpg_0103.png[""]
+
+
+[[creating_a_barrier]]
+===== Creating a barrier
+
+The `barrier()` method places a _barrier_ on a circuit (shown in <<barrier_example_circuit>>), providing both visual and functional separation between gates on a quantum circuit. Gates on either side of a barrier are not candidates for being optimized together as the circuit is converted to run on quantum hardware or a simulator.
+
+[NOTE]
+====
+The set of gates expressed using Qiskit represents an abstraction for the actual gates implemented on a given quantum computer or simulator. Qiskit _transpiles_ the gates into those implemented on the target platform, combining gates where possible to optimize the circuit.
+====
+
+====== Using the barrier() method
+
+The +barrier()+ method takes as an optional argument the qubit wires on which to place a barrier. If no argument is supplied, a barrier is placed across all of the quantum wires. This method creates a +Barrier+ instance (see <<barrier_class>>).
+
+The following code snippet demonstrates using the +barrier()+ method with and without arguments:
+
+[source,python]
+----
+qc = QuantumCircuit(2)
+qc.h([0,1])
+qc.barrier()
+qc.x(0)
+qc.x(0)
+qc.s(1)
+qc.barrier([1])
+qc.s(1)
+----
+
+<<barrier_example_circuit>> shows the resultant circuit.
+
+[[barrier_example_circuit]]
+.Example circuit using the `barrier()` method
+image::images/qkpg_0104.png[""]
+
+Notice that the S gates in the circuit are separated by a barrier and therefore are not candidates to be combined into a Z gate. However, the X gates may be combined by removing both of them, as they cancel one another out.
+
+[[measuring_a_quantum_circuit]]
+===== Measuring a quantum circuit
+
+The methods commonly used to measure quantum circuits are +measure()+ and +measure_all()+. The former is useful when the quantum circuit contains classical wires on which to receive the result of a measurement. The latter is useful when the quantum circuit doesn't have any classical wires. These methods create +Measure+ instances (see <<measure_class>>).
+
+====== Using the measure() method
+
+The +measure()+ method takes two arguments:
+
+* The qubit wires to be measured
+* The classical wires on which to store the resulting bits
+
+This code snippet uses the +measure()+ method, and <<measure_example_circuit>> shows a drawing of the resultant circuit:
+
+[source,python]
+----
+qc = QuantumCircuit(3, 3)
+qc.h([0,1,2])
+qc.measure([0,1,2], [0,1,2])
+qc.draw()
+----
+
+[[measure_example_circuit]]
+.Example circuit using the `measure()` method
+image::images/qkpg_0105.png[""]
+
+Notice that the +measure()+ method appended the requested measurement operations to the circuit.
+
+====== Using the measure_all() method
+
+The +measure_all()+ method may be called with no arguments. This code snippet uses the +measure_all()+ method, and <<measure_all_example_circuit>> shows a drawing of the resultant circuit:
+
+[source,python]
+----
+qc = QuantumCircuit(3)
+qc.h([0,1,2])
+qc.measure_all()
+qc.draw()
+----
+
+[[measure_all_example_circuit]]
+.Example circuit using the `measure_all()` method
+image::images/qkpg_0106.png[""]
+
+Notice that the +measure_all()+ method created three classical wires and added a barrier to the circuit before appending the measurement operations.
+
+===== Obtaining information about a quantum circuit
+
+Methods commonly used to obtain information about a quantum circuit include +depth()+, +size()+, and +width()+. These are listed in <<circuit_info_methods_table>>. Note that the variable +qc+ refers to an instance of +QuantumCircuit+.
+
+[[circuit_info_methods_table]]
+.Methods commonly used to obtain information about a quantum circuit
+[options="header"]
+|=======
+|Names|Example|Notes
+|*+depth+*|+qc.depth()+|Returns the depth (critical path) of a circuit if directives such as barrier were removed
+|*+size+*|+qc.size()+|Returns the total number of gate operations in a circuit
+|*+width+*|+qc.width()+|Return the sum of qubits wires and classical wires in a circuit
+|=======
+
+
+Attributes commonly used to obtain information about a quantum circuit include +clbits+, +data+, +global_phase+, +num_clbits+, +num_qubits+, and +qubits+. These are listed in <<circuit_info_attributes_table>>. Note that variable +qc+ refers to an instance of +QuantumCircuit+.
+
+[[circuit_info_attributes_table]]
+.Attributes commonly used to obtain information about a quantum circuit
+[options="header"]
+|=======
+|Names|Example|Notes
+|*+clbits+*|+qc.clbits+|Obtains the list of classical bits in the order that the registers were added
+|*+data+*|+qc.data+|Obtains a list of the operations (e.g., gates, barriers, and measurement operations) in the circuit
+|*+global_phase+*|+qc.global_phase+|Obtains the global phase of the circuit in radians
+|*+num_clbits+*|+qc.num_clbits+|Obtains the number of classical wires in the circuit
+|*+num_qubits+*|+qc.num_qubits+|Obtains the number of quantum wires in the circuit
+|*+qubits+*|+qc.qubits+|Obtains the list of quantum bits in the order that the registers were added
+|=======
+
+
+===== Manipulating a quantum circuit
+
+Methods commonly used to manipulate quantum circuits include +append()+, +bind_parameters()+, +compose()+, +copy()+, +decompose()+, +from_qasm_file()+, +from_qasm_str()+, +initialize()+, +reset()+, +qasm()+, +to_gate()+, and +to_instruction()+.
+
+
+[[using_the_append_method]]
+====== Using the append() method
+
+The +append()+ method appends an instruction or gate to the end of the circuit on specified wires, modifying the circuit in place. The following code snippet uses the +append()+ method, and <<append_example_circuit>> shows a drawing of the resultant circuit:
+
+[source,python]
+----
+qc = QuantumCircuit(2)
+qc.h(1)
+cx_gate = CXGate()
+qc.append(cx_gate, [1,0])
+qc.draw()
+----
+
+[[append_example_circuit]]
+.Example circuit resulting from the `append()` method
+image::images/qkpg_0107.png[""]
+
+[NOTE]
+====
+The +CXGate+ class (see <<cxgate_class>>) used in the code snippet is one of the gates defined in the +qiskit.circuit.library+ package. We advise you add the appropriate +import+ statements to this and other code snippets contained in this book.
+====
+
+
+
+[[bind_parameters_method]]
+====== Using the bind_parameters() method
+
+The +bind_parameters()+ method binds parameters (see <<the_parameter_class>>) to a quantum circuit. The following code snippet creates a circuit in which there are three parameterized phase gates. Note that the arguments to the +Parameter+ constructors in this code snippet are strings, in this case ones that contain theta characters. <<bind_parameters_example_circuit_a>> shows a drawing of the circuit:
+
+[source,python]
+----
+theta1 = Parameter('θ1')
+theta2 = Parameter('θ2')
+theta3 = Parameter('θ3')
+
+qc = QuantumCircuit(3)
+qc.h([0,1,2])
+qc.p(theta1,0)
+qc.p(theta2,1)
+qc.p(theta3,2)
+
+qc.draw()
+----
+
+[[bind_parameters_example_circuit_a]]
+.Example parameterized circuit
+image::images/qkpg_0108.png[""]
+
+To bind the parameter values to a new circuit, we'll pass a dictionary that contains the parameter references and desired values to the +bind_parameters()+ method. The following code snippet uses this technique, and <<bind_parameters_example_circuit_b>> shows the bound circuit in which the phase gate parameters are replaced with the supplied values:
+
+[source,python]
+----
+b_qc = qc.bind_parameters({theta1: math.pi/8,
+                          theta2: math.pi/4,
+                          theta3: math.pi/2})
+
+b_qc.draw()
+----
+
+[[bind_parameters_example_circuit_b]]
+.Example of bound circuit with the supplied phase gate rotation values
+image::images/qkpg_0109.png[""]
+
+
+
+====== Using the compose() method
+
+The +compose()+ method returns a new circuit composed of the original and another circuit. The following code snippet uses the +compose()+ method, and <<compose_example_circuit>> shows a drawing of the resultant circuit:
+
+[source,python]
+----
+qc = QuantumCircuit(2,2)
+qc.h(0)
+another_qc = QuantumCircuit(2,2)
+another_qc.cx(0,1)
+bell_qc = qc.compose(another_qc)
+bell_qc.draw()
+----
+
+[[compose_example_circuit]]
+.Example circuit resulting from the `compose()` method
+image::images/qkpg_0110.png[""]
+
+Note that a circuit passed into the +compose()+ method is allowed to have fewer quantum or classical wires than the original circuit.
+
+
+====== Using the copy() method
+
+The +copy()+ method returns a copy of the original circuit. The following code snippet uses the +copy()+ method:
+
+[source,python]
+----
+qc = QuantumCircuit(3)
+qc.h([0,1,2])
+new_qc = qc.copy()
+----
+
+
+====== Using the decompose() method
+
+The +decompose()+ method returns a new circuit after decomposing the original circuit one level. The following code snippet uses the +decompose()+ method. <<decompose_example_circuit>> shows a drawing of the resultant circuit in which S, H, and X gates are decomposed into the more fundamental U gate operations (see <<ugate_class>>):
+
+
+[source,python]
+----
+qc = QuantumCircuit(2)
+qc.h(0)
+qc.s(0)
+qc.x(1)
+decomposed_qc = qc.decompose()
+decomposed_qc.draw()
+----
+
+
+[[decompose_example_circuit]]
+.Example circuit resulting from the `decompose()` method
+image::images/qkpg_0111.png[""]
+
+
+====== Using the from_qasm_file() method
+
+The +from_qasm_file()+ method returns a new circuit from a file that contains a quantum assembly-language (OpenQASM) program. The following code snippet uses the +from_qasm_file()+ method:
+
+[source,python]
+----
+new_qc = QuantumCircuit.from_qasm_file("file.qasm")
+----
+
+
+====== Using the from_qasm_str() method
+
+The +from_qasm_str()+ method returns a new circuit from a string that contains an OpenQASM program. The following code snippet uses the +from_qasm_str()+ method, and <<from_qasm_str_example_circuit>> shows a drawing of the resultant circuit:
+
+[source,python]
+----
+qasm_str = """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[2];
+creg c[2];
+h q[0];
+cx q[0],q[1];
+measure q[0] -> c[0];
+measure q[1] -> c[1];
+"""
+new_qc = QuantumCircuit.from_qasm_str(qasm_str)
+new_qc.draw()
+----
+
+[[from_qasm_str_example_circuit]]
+.Example circuit resulting from the `from_qasm_str()` method
+image::images/qkpg_0112.png[""]
+
+
+====== Using the initialize() method
+
+The +initialize()+ method initializes qubits of a quantum circuit to a given state and is not a unitary operation. The following code snippet uses the +initialize()+ method, and <<initialize_example_circuit>> shows a drawing of the resultant circuit. In this code snippet, the circuit is initialized to the normalized statevector latexmath:[$\vert11\rangle$]:
+
+[source,python]
+----
+qc = QuantumCircuit(2)
+qc.initialize([0, 0, 0, 1])
+qc.draw()
+----
+
+[[initialize_example_circuit]]
+.Example circuit resulting from the `initialize()` method
+image::images/qkpg_0113.png[""]
+
+
+[[using_the_reset_method]]
+====== Using the reset() method
+
+The +reset()+ method resets a qubit in a quantum circuit to the latexmath:[$\vert0\rangle$] state and is not a unitary operation. The following code snippet uses the +reset()+ method, and <<reset_example_circuit>> shows a drawing of the resultant circuit. Note that the qubit state is latexmath:[$\vert1\rangle$] before the reset operation. This method creates a +Reset+ instance (see <<reset_class>>):
+
+[source,python]
+----
+qc = QuantumCircuit(1)
+qc.x(0)
+qc.reset(0)
+qc.draw()
+----
+
+[[reset_example_circuit]]
+.Example circuit resulting from using the `reset()` method
+image::images/qkpg_0114.png[""]
+
+
+====== Using the qasm() method
+
+The +qasm()+ method returns an OpenQASM program that represents the quantum circuit. The following code snippet uses the +qasm()+ method, and <<qasm_example_output>> shows the resultant OpenQASM program:
+
+[source,python]
+----
+qc = QuantumCircuit(2, 2)
+qc.h(0)
+qc.cx(0, 1)
+qasm_str = qc.qasm()
+print(qasm_str)
+----
+
+[[qasm_example_output]]
+.OpenQASM program resulting from the using the `qasm()` method
+====
+[source,python]
+----
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[2];
+creg c[2];
+h q[0];
+cx q[0],q[1];
+----
+====
+
+
+[[to_gate_method]]
+====== Using the to_gate() method
+
+The +to_gate()+ method creates a custom _gate_ (see <<the_gate_class>>) from a quantum circuit. The following code snippet creates a circuit that will be converted to a gate, and <<to_gate_example_circuit_a>> shows a drawing of the circuit:
+
+----
+anti_cnot_qc = QuantumCircuit(2)
+anti_cnot_qc.x(0)
+anti_cnot_qc.cx(0,1)
+anti_cnot_qc.x(0)
+
+anti_cnot_qc.draw()
+----
+
+[[to_gate_example_circuit_a]]
+.Example circuit that will be converted to a gate
+image::images/qkpg_0115.png[""]
+
+
+[NOTE]
+====
+A _gate_ represents a unitary operation. To create a custom operation that isn't unitary, use the +to_instruction()+ method shown in <<to_instruction_method>>.
+====
+
+This custom gate will implement an anticontrol NOT gate in which the X gate is applied only when the control qubit is latexmath:[$\vert0\rangle$]. The following code snippet creates a circuit that uses this custom gate, and <<to_gate_example_circuit_b>> shows a decomposed drawing of this circuit:
+
+----
+anti_cnot_gate = anti_cnot_qc.to_gate()
+
+qc = QuantumCircuit(3)
+qc.x([0,1,2])
+qc.append(anti_cnot_gate, [0,2])
+
+qc.decompose().draw()
+----
+
+[[to_gate_example_circuit_b]]
+.Decomposed circuit that uses a gate created by the `to_gate()` method
+image::images/qkpg_0116.png[""]
+
+
+
+[[to_instruction_method]]
+====== Using the to_instruction() method
+
+The +to_instruction()+ method creates a custom _instruction_ (see <<the_instruction_class>>) from a quantum circuit. The following code snippet creates a circuit that will be converted to an instruction, and <<to_instruction_example_circuit_a>> shows a drawing of the circuit:
+
+----
+reset_one_qc = QuantumCircuit(1)
+reset_one_qc.reset(0)
+reset_one_qc.x(0)
+
+reset_one_qc.draw()
+----
+
+[[to_instruction_example_circuit_a]]
+.Example circuit that will be converted to an instruction
+image::images/qkpg_0117.png[""]
+
+[NOTE]
+====
+An _instruction_ represents an operation that isn't necessarily unitary. To create a custom operation that is unitary, use the +to_gate()+ method shown in <<to_gate_method>>.
+====
+
+
+This custom instruction will reset a qubit and apply an X gate, in effect resetting the qubit to state latexmath:[$\vert1\rangle$]. The following code snippet creates a circuit that uses this custom instruction, and <<to_instruction_example_circuit_b>> shows a decomposed drawing of this circuit:
+
+----
+reset_one_inst = reset_one_qc.to_instruction()
+
+qc = QuantumCircuit(2)
+qc.h([0,1])
+qc.reset(0)
+qc.append(reset_one_inst, [1])
+
+qc.decompose().draw()
+----
+
+[[to_instruction_example_circuit_b]]
+.Circuit that uses an instruction created by the `to_instruction()` method
+image::images/qkpg_0118.png[""]
+
+[[saving_simulator_state]]
+===== Saving state when running a circuit on AerSimulator
+
+When running a circuit on an +AerSimulator+ backend (see <<using_aer_simulators>>), simulator state may be saved in the circuit instance by using the +QuantumCircuit+ methods in <<save_simulator_state_table>>. Please note that these methods are available after obtaining an +AerSimulator+ backend.
+
+[[save_simulator_state_table]]
+.Methods used to save simulator state in a circuit instance
+[options="header"]
+|=======
+|Method name|Description
+|+save_state+|Saves the simulator state as appropriate for the simulation method
+|+save_density_matrix+|Saves the simulator state as a density matrix
+|+save_matrix_product_state+|Saves the simulator state as a matrix product state tensor
+|+save_stabilizer+|Saves the simulator state as a Clifford stabilizer
+|+save_statevector+|Saves the simulator state as a statevector
+|+save_superop+|Saves the simulator state as a superoperator matrix of the run circuit
+|+save_unitary+|Saves the simulator state as a unitary matrix of the run circuit
+|=======
+
+
+[[quantum_reqister]]
+==== Using the QuantumRegister Class
+
+It is sometimes useful to treat groups of quantum or classical wires as a unit. For example, the control qubits of the CNOT gates in the quantum circuit expressed in the following code snippet, as well as in <<quantum_reqister_example_circuit>>, expect three qubits in equal superpositions. The additional quantum wire in the circuit is used as a scratch area whose output is disregarded:
+
+----
+qr = QuantumRegister(3, 'q')
+scratch = QuantumRegister(1, 'scratch')
+cr = ClassicalRegister(3, 'c')
+qc = QuantumCircuit(qr, scratch, cr)
+
+qc.h(qr)
+qc.x(scratch)
+qc.h(scratch)
+qc.cx(qr[0], scratch)
+qc.cx(qr[2], scratch)
+qc.barrier(qr)
+qc.h(qr)
+qc.measure(qr, cr)
+
+qc.draw()
+----
+
+[[quantum_reqister_example_circuit]]
+.Example circuit using the `QuantumRegister` and [.keep-together]#`ClassicalRegister`# classes
+image::images/qkpg_0119.png[""]
+
+By defining a +QuantumRegister+ consisting of three qubits, methods such as +h()+, +barrier()+, and +measure()+ may be applied to all three wires by passing a +QuantumRegister+ reference. Similarly, defining a +ClassicalRegister+ (see <<classical_reqister>>) consisting of three bits enables the +measure()+ method to specify all three classical wires by passing a +ClassicalRegister+ reference. Additionally, the names supplied to the +QuantumRegister+ and +ClassicalRegister+ constructors are displayed on the circuit drawing.
+
+
+===== Some QuantumRegister attributes
+
+Commonly used +QuantumRegister+ attributes include +name+ and +size+. These are listed in <<quantum_reqister_attributes_table>>. Note that the variable +qr+ refers to an instance of +QuantumRegister+.
+
+[[quantum_reqister_attributes_table]]
+.Some `QuantumRegister` attributes
+[options="header"]
+|=======
+|Names|Example|Notes
+|*+name+*|+qr.name+|Obtains the name of the quantum register
+|*+size+*|+qr.size+|Obtains the number of qubit wires in the quantum register
+|=======
+
+
+
+[[classical_reqister]]
+==== Using the ClassicalRegister Class
+
+Please refer to <<quantum_reqister>> for reasons to use the +ClassicalRegister+ class.
+
+===== Some ClassicalRegister attributes
+
+Commonly used +ClassicalRegister+ attributes include +name+ and +size+. These are listed in <<classical_reqister_attributes_table>>. Note that the variable +cr+ refers to an instance of +ClassicalRegister+.
+
+[[classical_reqister_attributes_table]]
+.Some `ClassicalRegister` attributes
+[options="header"]
+|=======
+|Names|Example|Notes
+|*+name+*|+cr.name+|Obtains the name of the classical register
+|*+size+*|+cr.size+|Obtains the number of bit wires in the classical register
+|=======
+
+
+[[instructions_and_gates]]
+=== Instructions and Gates
+
+In Qiskit, all operations that may be applied to a quantum circuit are derived from the +Instruction+ class (see <<the_instruction_class>>). Unitary operations are derived from the +Gate+ class (see <<the_gate_class>>), which is a subclass of +Instruction+. Controlled-unitary operations are derived from the +ControlledGate+ class, which is a subclass of +Gate+ (see <<the_controlled_gate_class>>). These classes may be used to define new instructions, unitary gates, and controlled-unitary gates, respectively.
+
+
+[[the_instruction_class]]
+==== The Instruction Class
+
+The nonunitary operations in Qiskit (such as +Measure+ and +Reset+) are direct subclasses of +Instruction+. Although it is possible to define your own custom instructions by subclassing +Instruction+, another way is to use the +to_instruction()+ method of the +QuantumCircuit+ class (see an example of this in <<to_instruction_method>>).
+
+
+Methods in the +Instruction+ class include +copy()+, +repeat()+, and +reverse_ops()+. These are listed in <<instruction_methods_table>>. Note that the variable +inst+ refers to an instance of +Instruction+.
+
+[[instruction_methods_table]]
+.Commonly used methods in the `Instruction` class
+[options="header"]
+|=======
+|Names|Example|Notes
+|*+copy+*|+inst.copy("My inst")+|Returns a copy of the instruction, giving the supplied name to the copy
+|*+repeat+*|+inst.repeat(2)+|Returns an instruction with this instruction repeated a given number of times
+|*+reverse_ops+*|+inst.reverse_ops()+|Returns an instruction with its operations in reverse order
+|=======
+
+
+Commonly used attributes in the +Instruction+ class include +definition+ and +params+. These are listed in <<instruction_attributes_table>>. Note that the variable +inst+ refers to an instance of +Instruction+.
+
+[[instruction_attributes_table]]
+.Commonly used attributes in the Instruction class
+[options="header"]
+|=======
+|Names|Example|Notes
+|[.keep-together]#*+definition+*#|+inst.[.keep-together]#definition#+|Returns the definition in terms of basic gates
+|*+params+*|+inst.params+|Obtains the parameters to the instruction
+|=======
+
+
+
+
+[[the_gate_class]]
+==== The Gate Class
+
+
+The unitary operations in Qiskit (such as +HGate+ and +XGate+) are subclasses of +Gate+. Although it is possible to define your own custom gates by subclassing +Gate+, another way is to use the +to_gate()+ method of the +QuantumCircuit+ class (see an example of this in <<to_gate_method>>).
+
+Commonly used methods in the +Gate+ class include the +Instruction+ methods listed in <<instruction_methods_table>> as well as +control()+, +inverse()+, +power()+, and +to_matrix()+. These are all listed in <<gate_methods_table>>. Note that the variable +gate+ refers to an instance of +Gate+.
+
+[[gate_methods_table]]
+.Commonly used methods in the `Gate` class
+[options="header"]
+|=======
+|Names|Example|Notes
+|*+control+*|+gate.control(1)+|Given a number of control qubits, returns a controlled version of the gate
+|*+copy+*|+gate.copy("My gate")+|Returns a copy of the gate, giving the supplied name to the copy
+|*+inverse+*|+gate.inverse()+|Returns the inverse of the gate
+|*+power+*|+gate.power(2)+|Returns the gate raised to a given floating-point power
+|*+repeat+*|+gate.repeat(3)+|Returns a gate with this gate repeated a given number of times
+|*+reverse_ops+*|+gate.reverse_ops()+|Returns a gate with its operations in reverse order
+|*+to_matrix+*|+gate.to_matrix()+|Returns an array for the gate's unitary matrix
+|=======
+
+
+Commonly used attributes in the +Gate+ class include the +Instruction+ attributes listed in <<instruction_attributes_table>> as well as +label+. These are all listed in <<gate_attributes_table>>. Note that the variable +gate+ refers to an instance of +Gate+.
+
+[[gate_attributes_table]]
+.Commonly used attributes in the `Gate` class
+[options="header"]
+|=======
+|Names|Example|Notes
+|*+definition+*|+gate.definition+|Returns the definition in terms of basic gates
+|*+label+*|+gate.label+|Obtains the label for the instruction
+|*+params+*|+gate.params+|Obtains the parameters to the instruction
+|=======
+
+
+
+[[the_controlled_gate_class]]
+==== The ControlledGate Class
+
+The controlled-unitary operations in Qiskit (such as +CZGate+ and +CCXGate+) are subclasses of +ControlledGate+, which is a subclass of +Gate+.
+
+Commonly used methods in the +ControlledGate+ class are the +Gate+ methods listed in <<gate_methods_table>>
+
+
+Commonly used attributes in the +ControlledGate+ class include the +Gate+ attributes listed in <<gate_attributes_table>> as well as +num_ctrl_qubits+ and +ctrl_state+.
+
+
+===== Using the num_ctrl_qubits attribute
+
+The +num_ctrl_qubits+ attribute holds an integer that represents the number of control qubits in a +ControlledGate+. The following code snippet, whose printed output would be 2, uses the +num_ctrl_qubits+ attribute of a Toffoli gate:
+
+[source,python]
+----
+from qiskit.circuit.library import CCXGate
+
+toffoli = CCXGate()
+print(toffoli.num_ctrl_qubits)
+----
+
+
+===== Using the ctrl_state() method
+
+A +ControlledGate+ may have one or more control qubits, each of which may actually be either control or _anticontrol_ qubits (see the anticontrol example in <<to_gate_method>>). The +ctrl_state+ attribute holds an integer whose binary value represents which qubits are control qubits and which are anticontrol qubits. Specifically, the binary digit +1+ represents a control qubit, and the binary digit +0+ represents an anticontrol qubit. 
+
+The +ctrl_state+ attribute supports both accessing and modifying its value. The following code snippet uses the +ctrl_state+ attribute in which the binary value +10+ causes the topmost control qubit to be an anticontrol qubit. <<ctrl_state_example_drawing>> shows a drawing of the resultant circuit:
+
+[source,python]
+----
+toffoli = CCXGate()
+toffoli.ctrl_state = 2
+
+toffoli.definition.draw()
+----
+
+[[ctrl_state_example_drawing]]
+.Toffoli gate with a control qubit and an anticontrol qubit
+image::images/qkpg_0120.png[""]
+
+
+
+===== Defining a custom controlled gate
+
+Although it is possible to define your own custom controlled gates by subclassing +ControlledGate+, another way is to follow these two steps:
+
+. Create a custom gate with the +to_gate()+ method of the +QuantumCircuit+ class (see an example of this in <<to_gate_method>>).
+. Add control qubits to your custom gate by using the [.keep-together]#+control()+# method shown in <<gate_methods_table>>.
+
+We'll follow those two steps to define a custom controlled gate that applies a π/16 phase rotation when both of its control qubits are latexmath:[$\vert1\rangle$]. First, the following code snippet defines a circuit that contains a π/16 P gate and converts it to a custom gate, with <<custom_cgate_circuit_a>> showing a drawing of the custom gate:
+
+
+[source,python]
+----
+from qiskit import QuantumCircuit
+import math
+
+p16_qc = QuantumCircuit(1)
+p16_qc.p(math.pi/16, 0)
+
+p16_gate = p16_qc.to_gate()
+
+p16_gate.definition.draw()
+----
+
+[[custom_cgate_circuit_a]]
+.Custom π/16 phase gate drawing
+image::images/qkpg_0121.png[""]
+
+
+
+Second, the following code snippet uses the +control()+ method to create a +ControlledGate+ from our custom gate, and <<custom_cgate_circuit_b>> shows a drawing of the custom controlled gate:
+
+[source,python]
+----
+ctrl_p16 = p16_gate.control(2)
+
+ctrl_p16.definition.draw()
+----
+
+[[custom_cgate_circuit_b]]
+.Custom controlled π/16 phase gate drawing
+image::images/qkpg_0122.png[""]
+
+We'll leverage the +append()+ method (see <<using_the_append_method>>) in the following code snippet to use our custom controlled gate in a quantum circuit. <<custom_cgate_circuit_c>> shows a drawing of the circuit:
+
+[source,python]
+----
+qc = QuantumCircuit(4)
+qc.h([0,1,2,3])
+qc.append(ctrl_p16,[0,1,3])
+
+qc.decompose().draw()
+----
+
+[[custom_cgate_circuit_c]]
+.Decomposed circuit that uses the custom controlled gate
+image::images/qkpg_0123.png[""]
+
+
+=== Parameterized Quantum Circuits
+
+It is sometimes useful to create a quantum circuit in which values may be supplied at runtime. This capability is available in Qiskit using _parameterized circuits_, implemented in part by the +Parameter+ and +ParameterVector+ classes.
+
+[[the_parameter_class]]
+==== Creating a Parameter Instance
+
+The +Parameter+ class is used to represent a parameter in a quantum circuit. See <<bind_parameters_method>> for an example of defining and using a parameterized circuit. As shown in that example, a parameter may be created by supplying a unicode string to its constructor as follows:
+
+----
+theta1 = Parameter("θ1")
+----
+
+The +Parameter+ object reference named +theta1+ may subsequently be used in the +bind_parameters()+, or alternatively the +assign_parameters()+ method of the +QuantumCircuit+ class.
+
+==== Using the ParameterVector Class
+
+The +ParameterVector+ class may be leveraged to create and use parameters as a collection instead of individual variables. The following code snippet creates a circuit in which there are three parameterized phase gates. <<bind_parameter_vector_example_circuit_a>> shows a drawing of the circuit:
+
+[source,python]
+----
+from qiskit.circuit import QuantumCircuit,\
+                           ParameterVector
+
+theta = ParameterVector('θ', 3)
+
+qc = QuantumCircuit(3)
+qc.h([0,1,2])
+qc.p(theta[0],0)
+qc.p(theta[1],1)
+qc.p(theta[2],2)
+
+qc.draw()
+----
+
+[[bind_parameter_vector_example_circuit_a]]
+.Example of a parameterized circuit leveraging `ParameterVector`
+image::images/qkpg_0124.png[""]
+
+To bind the parameter values to a new circuit, we'll pass a dictionary that contains the +ParameterVector+ reference and desired list of values to the +bind_parameters()+ method. The following code snippet shows this technique, and <<bind_parameter_vector_example_circuit_b>> shows the bound circuit in which the phase gate parameters are replaced with the supplied values:
+
+[source,python]
+----
+import math
+
+b_qc = qc.bind_parameters({theta: [math.pi/8,
+                                   math.pi/4,
+                                   math.pi/2]})
+
+b_qc.draw()
+----
+
+[[bind_parameter_vector_example_circuit_b]]
+.Example of bound circuit with the supplied phase gate rotation values
+image::images/qkpg_0125.png[""]
+
+

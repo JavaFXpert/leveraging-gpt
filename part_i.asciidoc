@@ -1,0 +1,18 @@
+[role="pagenumrestart"]
+[[part_i]]
+[part]
+== Qiskit Fundamentals
+++++
+<blockquote data-type="epigraph">
+<p>If one has left this entire system to itself for an hour, one would say that the cat still lives if meanwhile no atom has decayed. The psi-function of the entire system would express this by having in it the living and dead [.keep-together]#cat (pardon# the expression) mixed or smeared out [.keep-together]#in equal parts.#</p>
+<p data-type="attribution">Erwin Schrödinger</p>
+</blockquote>
+++++
+[partintro]
+--
+Underlying all programs developed using Qiskit are some fundamental concepts and modules. In the first part of this book, we'll explore these fundamentals, beginning with pass:[<a data-type="xref" data-xrefstyle="chap-num-title" href="#quantum_circuits_operations">#quantum_circuits_operations</a>]. In that chapter, we'll demonstrate how to create quantum circuits, populate them with commonly used gates and instructions, obtain information about quantum circuits, and manipulate them.
+
+In pass:[<a data-type="xref" data-xrefstyle="chap-num-title" href="#executing_quantum_experiments">#executing_quantum_experiments</a>], we'll demonstrate how to use Qiskit classes and functions to run quantum circuits on quantum simulators and devices. We'll also show you how to monitor the status of a job, as well as how to obtain its results. Then in pass:[<a data-type="xref" data-xrefstyle="chap-num-title" href="#quantum_visualizations">#quantum_visualizations</a>], we'll show you how to leverage graphical features of Qiskit to visualize quantum states and results.
+
+Finally in pass:[<a data-type="xref" data-xrefstyle="chap-num-title" href="#using_the_transpiler">#using_the_transpiler</a>], we'll discuss the process of _transpilation_ in which the operations of a quantum circuit are converted into instructions for running on a particular quantum simulator or device.
+--

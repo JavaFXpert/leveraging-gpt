@@ -1,0 +1,424 @@
+[[qiskit_opflow_chap]]
+
+== Operator Flow
+
+The +qiskit.opflow+ module contains classes for expressing and manipulating quantum states and operations. Some of the functionality is backed by classes in the +qiskit.quantum_info+ module. One of the main purposes of this Operator Flow layer is to facilitate the development of quantum algorithms.
+
+[[creating_opflow_expressions]]
+=== Creating Operator Flow Expressions
+
+The +qiskit.opflow+ module contains an immutable set of operators, shown in <<opflow_globals_table>>, that are useful in creating expressions that contain quantum states and operators.
+
+[[opflow_globals_table]]
+.Immutable operators in the +qiskit.opflow+ module
+[options="header"]
+|=======
+|Operator|Description
+|+X+|Pauli X
+|+Y+|Pauli Y
+|+Z+|Pauli Z
+|+I+|Pauli I
+|+H+|H gate
+|+S+|S gate
+|+T+|T gate
+|+CX+|CX gate
+|+CZ+|CZ gate
+|+Swap+|Swap gate
+|+Zero+|Qubit 0 state
+|+One+|Qubit 1 state
+|+Plus+|Qubit + state
+|+Minus+|Qubit - state
+|=======
+
+In order to use these operators in expressions, we'll need algebraic operations and predicates, such as those shown in <<opflow_algebraic_table>>.
+
+[[opflow_algebraic_table]]
+.Algebraic operations and predicates in the +qiskit.opflow+ module
+[options="header"]
+|=======
+|Algebraic operation|Description
+|+++|Addition
+|+-+|Subtraction/negation
+|+*+|Scalar multiplication
+|+/+|Scalar division
+|+@+|Composition
+|+^+|Tensor product or tensor power
+|+**+|Composition power
+|+==+|Equality
+|+~+|Adjoint
+|=======
+
+These algebraic operations are syntactic sugar for underlying methods that perform functions such as computing tensor products and multiplying matrices, which allows representing complex formulas with a concise syntax.
+
+Using operators and algebraic operations from Tables <<opflow_globals_table, 6-1>> and <<opflow_algebraic_table, 6-2>> we can create expressions such as the arbitrary state latexmath:[$ \vert10010\rangle$] in the following code snippet. As with other examples in this book, and in Qiskit as a whole, the least significant qubit is represented by the rightmost binary digit:
+
+[source,python]
+----
+from qiskit.opflow import Zero, One
+
+state = One ^ Zero ^ One ^ Zero ^ Zero
+print(state)
+
+output:
+  DictStateFn({'10100': 1})
+----
+
+Notice that the output reveals the class, +DictStateFn+, in which our state is held. We'll explore these classes soon.
+
+We can also create expressions such as the arbitrary Pauli operator with a phase coefficient in the following listing:
+
+[source,python]
+----
+from qiskit.opflow import X, Z
+
+pauli_piXZ = -(X ^ Z)
+print(pauli_piXZ)
+
+output:
+  -1.0 * XZ
+----
+
+You may recognize this Pauli operator as an example used in <<using_pauli_class>>. In that example, the matrix that models the operator was printed, and we'll do so here to show that it is the same:
+
+[source,python]
+----
+print(pauli_piXZ.to_matrix())
+
+output:
+  [[-0.+0.j -0.+0.j -1.+0.j -0.+0.j]
+   [-0.+0.j -0.+0.j -0.+0.j  1.-0.j]
+   [-1.+0.j -0.+0.j -0.+0.j -0.+0.j]
+   [-0.+0.j  1.-0.j -0.+0.j -0.+0.j]]
+----
+
+Now we'll create an Operator Flow expression that represents a GHZ circuit:
+
+[source,python]
+----
+from qiskit.opflow import I, X, H, CX
+
+op = (CX ^ I) @ (I ^ CX) @ (I ^ I ^ H)
+print(op)
+
+output:
+       ┌───┐
+  q_0: ┤ H ├──■───────
+       └───┘┌─┴─┐
+  q_1: ─────┤ X ├──■──
+            └───┘┌─┴─┐
+  q_2: ──────────┤ X ├
+                 └───┘
+----
+
+Notice that Operator Flow notation is little-endian. For example, the H gate in the expression is placed on the least significant qubit wire. Also notice that the control wire of a given CX gate is on the lesser index of its qubit wires.
+
+For fun, let's convert the expression to a circuit and sample the probability distribution using a +Statevector+ (see <<using_statevector_class>>):
+
+[source,python]
+----
+from qiskit.quantum_info import Statevector
+
+qc = op.to_circuit()
+sv = Statevector(qc)
+print(sv.sample_counts(1000))
+
+output:
+  {'000': 482, '111': 518}
+----
+
+
+Underlying this Operator Flow expression syntax is a rich set of classes for representing states, operators, and other constructs. Let's dive into how Operator Flow represents states, with the state function classes.
+
+=== Using the Operator Flow State Function Classes
+
+The +qiskit.opflow.state_fns+ module contains a few classes, shown in <<opflow_state_functions_table>>, that represent state functions.
+
+[[opflow_state_functions_table]]
+.Some classes that represent state functions in the +qiskit.opflow.state_fns+ module
+[options="header"]
+|=======
+|Class name|Description
+|+StateFn+|Base class and factory for +StateFn+ subclasses.
+|+Circuit&#x200b;Sta&#x2060;teFn+|Represents a state function, backed by a +QuantumCircuit+ instance that assumes all-zero qubit inputs. See <<constructing_quantum_circuits>>.
+|+DictStateFn+|Represents a state function, backed by a Python dictionary.
+|+Vector&#x200b;Sta&#x2060;teFn+|Represents a state function, backed by a +Statevector+ class. See <<using_statevector_class>>.
+|+SparseVectorStateFn+|Contains a sparse representation of a state function.
+|+Operator&#x200b;Sta&#x2060;teFn+|Represents a state function, backed by a density operator.
+|=======
+
+We'll focus on the +StateFn+ class, which is the base class and factory for the rest of these classes.
+
+[[using_statefn_class]]
+==== Using the StateFn Class
+
+The +StateFn+ class is the base class for all the state function classes in Operator Flow. This class also serves as a factory for these state function classes in Operator Flow. For example, as shown in the following listing, a +DictStateFn+ may be instantiated by passing a bit string into a +StateFn+:
+
+[source,python]
+----
+from qiskit.opflow.state_fns import StateFn
+
+statefn = StateFn('10100')
+print(statefn)
+
+output:
+  DictStateFn({'10100': 1})
+----
+
+Notice that this creates an instance of the same class, +Dict&#x200b;Sta&#x2060;teFn+, as when using an Operator Flow expression to create that state function in <<creating_opflow_expressions>>.
+
+For another example, as shown in the following code, a +Circuit&#x200b;Sta&#x2060;teFn+ may be instantiated by passing a +QuantumCircuit+ into a +StateFn+:
+
+[source,python]
+----
+from qiskit import QuantumCircuit
+
+qc = QuantumCircuit(3)
+qc.h(0)
+qc.cx(0, 1)
+qc.cx(1, 2)
+
+statefn = StateFn(qc)
+print(statefn)
+
+output:
+  CircuitStateFn(
+       ┌───┐
+  q_0: ┤ H ├──■───────
+       └───┘┌─┴─┐
+  q_1: ─────┤ X ├──■──
+            └───┘┌─┴─┐
+  q_2: ──────────┤ X ├
+                 └───┘
+  )
+----
+
+This creates an instance of the same class, +CircuitStateFn+, as when using an Operator Flow expression to create a GHZ state in <<creating_opflow_expressions>>.
+
+For yet another example, as shown in the following listing, a +VectorStateFn+ may be instantiated by passing a list of amplitudes into a +StateFn+:
+
+[source,python]
+----
+import numpy as np
+
+statefn = StateFn([1, 0, 0, 1] / np.sqrt(2))
+print(statefn)
+
+output:
+  VectorStateFn(Statevector([
+                0.70710678+0.j,
+                0.+0.j,
+                0.+0.j,
+                0.70710678+0.j],
+            dims=(2, 2)))
+----
+
+Note that this creates an instance of +Statevector+, just as we did with a similar example in <<using_statevector_class>>.
+
+Tables <<statefn_init_table, 6-4>>, <<statefn_methods_table, 6-5>> and <<statefn_attributes_table, 6-6>> describe some of the instantiation parameters, methods, and attributes in the +StateFn+ class.
+
+[[statefn_init_table]]
+.Some +StateFn+ instantiation parameters
+[options="header"]
+|=======
+|Parameter name|Description
+|+primitive+|Determines which of the +StateFn+ classes will be created, and sets its initial value. Can be either a str, dict, +Result+, list, ndarray, +Statevector+, +QuantumCircuit+, +Instruction+, +OperatorBase+, or +None+.
+|+coeff+|Coefficient of this state function.
+|+is_measurement+|If +True+, this state function is to be a bra (row vector) rather than a ket (column vector).
+|=======
+
+Supplying a +True+ +is_measurement+ argument is related to using the +~+ (adjoint) algebraic operator from <<opflow_algebraic_table>>. In the following example, the values of +statefn_a+ and +statefn_b+ are equivalent:
+
+[source,python]
+----
+from qiskit.opflow.state_fns import StateFn
+from qiskit.opflow import One, Zero
+
+statefn_a = StateFn('100', is_measurement=True)
+print('statefn_a:', statefn_a,
+      statefn_a.is_measurement)
+
+statefn_b = ~(One ^ Zero ^ Zero)
+print('statefn_b:', statefn_b,
+      statefn_b.is_measurement)
+
+output:
+  statefn_a: DictMeasurement({'100': 1}) True
+  statefn_b: DictMeasurement({'100': 1}) True
+----
+
+Note that the +DictMeasurement+ in the output indicates that +is_measurement+ is +True+.
+
+[[statefn_methods_table]]
+.Some +StateFn+ methods
+[options="header"]
+|=======
+|Method name|Description
+|+add+|Returns the addition of a supplied +StateFn+ to this one. This is equivalent to using the +++ algebraic operator in <<opflow_algebraic_table>>.
+|+adjoint+|Returns the adjoint (complex conjugate) of this +StateFn+. This is equivalent to using the +~+ algebraic operator in <<opflow_algebraic_table>>.
+|+equals+|Returns a Boolean that indicates whether the supplied +StateFn+ is equal to this one up to global phase. This is equivalent to using the +==+ algebraic operator in <<opflow_algebraic_table>>.
+|+eval+|Evaluate underlying function of this +StateFn+.
+|+mul+|Returns the scalar multiplication of a supplied number to this +StateFn+. Number should be a valid +int+, +float+, complex, or +Parameter+ instance. This is equivalent to using the +*+ algebraic operator in <<opflow_algebraic_table>>.
+|+primi&#x2060;tive&#x200b;_strings+|Return a set of strings describing the primitives contained in this +StateFn+.
+|+sample+|Samples the normalized probability distribution of this +StateFn+ a supplied number of shots and returns a dictionary with the results.
+|+tensor+|Returns the tensor product of this +StateFn+ with a supplied +StateFn+. This is equivalent to using the +^+ algebraic operator in <<opflow_algebraic_table>>.
+|+tensorpower+|Returns the tensor product of this +StateFn+ with itself a supplied number of times, represented as an +int+. This is equivalent to using the +^+ algebraic operator in <<opflow_algebraic_table>>.
+|+to_circuit_op+|Returns a +CircuitOp+ that is equivalent to this +StateFn+.
+|+to_den&#x2060;sity&#x200b;_matrix+|Return a matrix representing the product of +StateFn+ evaluated on pairs of basis states.
+|+to_matrix+|Returns the NumPy representation of this +StateFn+.
+|+to_matrix_op+|Returns a +VectorStateFn+ for this +StateFn+.
+|=======
+
+[[statefn_attributes_table]]
+.Some +Statevector+ attributes
+[options="header"]
+|=======
+|Attribute name|Description
+|+coeff+|Coefficient of this state function.
+|+is_measurement+|If +True+, this state function represents a bra (row vector) rather than a ket (column vector).
+|+num_qubits+|Contains the number of qubits in the state function.
+|+primitive+|Which of the +StateFn+ classes implements the behavior of this state function.
+|=======
+
+
+Let's turn our attention to how Operator Flow represents operators, with the primitive operators classes.
+
+=== Using the Operator Flow Primitive Operators Classes
+
+The +qiskit.opflow.primitive_ops+ module contains a few classes, shown in <<opflow_primitive_ops_table>>, that represent primitive operators.
+
+[[opflow_primitive_ops_table]]
+.Some classes that represent primitive operators in the +qiskit.opflow.primitive_ops+ module
+[options="header"]
+|=======
+|Class name|Description
+|+PrimitiveOp+|Base class and factory for +PrimitiveOp+ subclasses.
+|+CircuitOp+|Represents a quantum operator, backed by a +QuantumCircuit+ instance. See <<constructing_quantum_circuits>>.
+|+MatrixOp+|Represents a quantum operator, backed by an +Operator+ instance. See <<using_operator_class>>.
+|+PauliOp+|Represents a quantum operator, backed by a +Pauli+ class. See <<using_pauli_class>>.
+|=======
+
+We'll focus on the +PrimitiveOp+ class, which is the base class and factory for the rest of these classes.
+
+[[using_primitiveop_class]]
+==== Using the PrimitiveOp Class
+
+The +PrimitiveOp+ class is the base class for all of the primitive operator classes in Operator Flow. This class also serves as a factory for these classes. For example, as shown in the following listing, a +PauliOp+ may be instantiated by passing a +Pauli+ instance into a +PrimitiveOp+:
+
+[source,python]
+----
+from qiskit.opflow.primitive_ops \
+  import PrimitiveOp
+from qiskit.quantum_info import Pauli
+
+primop_piXZ = PrimitiveOp(Pauli('-XZ'))
+print(primop_piXZ)
+print(type(primop_piXZ))
+
+output:
+  -XZ
+  <class '...PauliOp'>
+----
+
+Notice from the following code that this creates an instance of the same class, +PauliOp+, as when using an Operator Flow expression to create that primitive operator (see <<creating_opflow_expressions>>). Also notice that the underlying primitives (the +Pauli+ instances) are equivalent up to a global phase but that they are not equal, given that they are of different types:
+
+[source,python]
+----
+from qiskit.opflow import X, Z
+
+pauli_piXZ = -(X ^ Z)
+print(type(pauli_piXZ))
+print(primop_piXZ.primitive
+      .equiv(pauli_piXZ.primitive))
+
+output:
+  <class '...PauliOp'>
+  True
+----
+
+For another example, as shown in the following listing, a +CircuitOp+ may be instantiated by passing a +QuantumCircuit+ into a +PrimitiveOp+:
+
+[source,python]
+----
+from qiskit import QuantumCircuit
+
+qc = QuantumCircuit(3)
+qc.h([0,1,2])
+
+h_primop = PrimitiveOp(qc)
+print(h_primop)
+print(type(h_primop))
+
+output:
+       ┌───┐
+  q_0: ┤ H ├
+       ├───┤
+  q_1: ┤ H ├
+       ├───┤
+  q_2: ┤ H ├
+       └───┘
+  <class ...CircuitOp'>
+----
+
+This creates an instance of the same class, +CircuitOp+, as when using an Operator Flow expression to create the same circuit as shown in the following code:
+
+[source,python]
+----
+from qiskit.opflow import H
+
+hgates = H^3
+print(hgates)
+print(type(hgates))
+
+output:
+       ┌───┐
+  q_0: ┤ H ├
+       ├───┤
+  q_1: ┤ H ├
+       ├───┤
+  q_2: ┤ H ├
+       └───┘
+  <class ...CircuitOp'>
+----
+
+Tables <<primitiveop_init_table, 6-8>>, <<primitiveop_methods_table, 6-9>> and <<primitiveop_attributes_table, 6-10>> describe some of the instantiation parameters, methods, and attributes in the +PrimitiveOp+ class.
+
+[[primitiveop_init_table]]
+.Some +PrimitiveOp+ instantiation parameters
+[options="header"]
+|=======
+|Parameter name|Description
+|+primitive+|Determines which of the +PrimitiveOp+ classes will be created and sets its initial value. Can be either a +QuantumCircuit+, +Operator+, +Pauli+, +SparsePauliOp+, or +OperatorBase+.
+|+coeff+|Coefficient of this primitive operator
+|=======
+
+[[primitiveop_methods_table]]
+.Some +PrimitiveOp+ methods
+[options="header"]
+|=======
+|Method name|Description
+|+add+|Returns the addition of a supplied +PrimitiveOp+ to this one. This is equivalent to using the +++ algebraic operator in <<opflow_algebraic_table>>.
+|+adjoint+|Returns the adjoint (complex conjugate) of this +PrimitiveOp+. This is equivalent to using the +~+ algebraic operator in <<opflow_algebraic_table>>.
+|+compose+|Returns the operator composition of a supplied +PrimitiveOp+ to this one. This is equivalent to using the +@+ algebraic operator in <<opflow_algebraic_table>>.
+|+equals+|Returns a Boolean that indicates whether the supplied +PrimitiveOp+ is equal to this one. This is equivalent to using the +==+ algebraic operator in <<opflow_algebraic_table>>.
+|+eval+|Evaluates the underlying function of this +PrimitiveOp+.
+|+exp_i+|Returns the +PrimitiveOp+ exponentiation.
+|+mul+|Returns the scalar multiplication of a supplied number to this ++PrimitiveOp++. This is equivalent to using the +*+ algebraic operator in <<opflow_algebraic_table>>.
+|+primitive_strings+|Returns a set of strings describing the primitives contained in this +PrimitiveOp+.
+|+tensor+|Returns the tensor product of this ++PrimitiveOp++ with a supplied +PrimitiveOp+. This is equivalent to using the +^+ algebraic operator in <<opflow_algebraic_table>>.
+|+tensorpower+|Returns the tensor product of this ++PrimitiveOp++ with itself a supplied number of times. This is equivalent to using the +^+ algebraic operator in <<opflow_algebraic_table>>.
+|+to_circuit_op+|Returns a +CircuitOp+ that is equivalent to this ++PrimitiveOp++.
+|+to_instruction+|Returns an +Instruction+ equivalent to this +Primi&#x200b;ti&#x2060;ve&#x200b;Op+.
+|+to_matrix+|Returns the NumPy representation of this ++Primi&#x200b;t&#x2060;ive&#x200b;Op++.
+|+to_matrix_op+|Returns a +MatrixOp+ for this ++PrimitiveOp++.
+|=======
+
+[[primitiveop_attributes_table]]
+.Some +PrimitiveOp+ attributes
+[options="header"]
+|=======
+|Attribute name|Description
+|+coeff+|Coefficient of this primitive operator
+|+num_qubits+|Contains the number of qubits in the primitive operator
+|+primitive+|Which of the +PrimitiveOp+ classes implements the behavior of this primitive operator
+|=======
+

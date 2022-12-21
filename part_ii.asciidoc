@@ -1,0 +1,18 @@
+[[part_ii]]
+[part]
+
+== Quantum Information and Algorithms
+++++
+<blockquote data-type="epigraph">
+<p>In fact, the mere act of opening the box will determine the state of the cat, although in this case there were three determinate states the cat could be in: these being Alive, Dead, and Bloody Furious.
+</p>
+<p data-type="attribution">Terry Pratchett</p>
+</blockquote>
+++++
+
+[partintro]
+--
+In <<part_i>>, we explored the fundamentals of Qiskit, including creating and running quantum circuits and visualizing their results. Here in <<part_ii>>, we'll discuss modules in Qiskit that leverage these fundamentals to apply quantum mechanical concepts to representing and processing information. We'll begin this journey by exploring quantum states, operators, channels, and measures in pass:[<a data-type="xref" data-xrefstyle="chap-num-title" href="#qiskit_quantum_info_chap">#qiskit_quantum_info_chap</a>].
+
+Then, we'll examine a module in Qiskit that facilitates expressing and manipulating quantum states and operations in pass:[<a data-type="xref" data-xrefstyle="chap-num-title" href="#qiskit_opflow_chap">#qiskit_opflow_chap</a>]. Finally, we'll explore higher-level features of Qiskit that solve problems using algorithms that leverage the power of quantum information in pass:[<a data-type="xref" data-xrefstyle="chap-num-title" href="#algorithms_chap">#algorithms_chap</a>].
+--

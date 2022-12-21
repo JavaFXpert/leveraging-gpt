@@ -1,0 +1,567 @@
+[[executing_quantum_experiments]]
+
+== Running Quantum Circuits
+
+Qiskit supports running quantum circuits on a wide variety of quantum simulators and devices. We'll explore relevant classes and functions, most of which are located in the following [.keep-together]#modules#:
+
+* The +qiskit.providers.basicaer+ module contains a basic set of simulators implemented in Python, often referred to as _BasicAer_ simulators.
+* The +qiskit.providers.aer+ module contains a comprehensive set of high-performance simulators, often referred to as _Aer_ simulators.
+* The +qiskit.providers+ module contains classes that support these simulators as well as provide access to real quantum devices.
+
+Regardless of the quantum simulator or device on which you choose to run a circuit, you may follow these steps:
+
+. Identify the appropriate _provider_ (either +BasicAer+, +Aer+, or a quantum device provider). A provider's purpose is to get _backend_ objects that enable executing circuits on a quantum simulator or device.
+. Obtain a reference to the desired _backend_ from the provider. A backend provides the interface between Qiskit and the hardware or simulator that will execute circuits.
+. Using the backend, run the circuit on the simulator or device. This returns an object that represents the _job_ in which the circuit is being run.
+. Interact with the job for purposes such as checking status and getting its _result_ after completing.
+
+[[using_the_basicaer_simulators]]
+=== Using the BasicAer Simulators
+As with any backend provider, a list of available +BasicAer+ backends may be obtained by calling the provider's +backends()+ method as shown in the following code snippet:
+
+[source,python]
+----
+from qiskit import BasicAer
+
+print(BasicAer.backends())
+
+
+output:
+[<QasmSimulatorPy('qasm_simulator')>,
+ <StatevectorSimulatorPy('statevector_simulator')>,
+ <UnitarySimulatorPy('unitary_simulator')>]
+----
+
+Notice that the output shows a Python list containing three +BasicAer+ backends, each of which represents a simulator implemented by a corresponding class. A reference to the desired backend may be obtained by calling the provider's +get_backend()+ method as shown in the following code snippet. 
+
+==== Using the BasicAer qasm_simulator Backend
+
+Notice that the desired backend in this example is the +qasm_simulator+, whose main purpose is to run a circuit and hold its measurement outcomes:
+
+[source,python]
+----
+from qiskit import QuantumCircuit, BasicAer, \
+                                   transpile
+
+qc = QuantumCircuit(2)
+qc.h(0)
+qc.cx(0, 1)
+qc.measure_all() <1>
+
+backend = BasicAer.get_backend("qasm_simulator") <2>
+tqc = transpile(qc, backend) <3>
+job = backend.run(tqc, shots=1000) <4>
+result = job.result() <5>
+counts = result.get_counts(tqc) <6>
+print(counts)
+
+
+output: <7>
+  {'00': 495, '11': 505}
+----
+
+Let's take a closer look at some relevant lines in the code [.keep-together]#snippet#:
+
+<1> The +BasicAer+ +qasm_simulator+ backend is useful for circuits that contain measurement instructions.
+
+<2> A reference to the +qasm_simulator+ backend (implemented by the +QasmSimulatorPy+ class) is obtained.
+
+<3> The circuit is _transpiled_ with the +transpile()+ function to use only gates available on the +BasicAer+ +qasm_simulator+.
+
+<4> The transpiled circuit and number of +shots+ to perform is passed to the +run()+ method of the +BasicAer+ +qasm_simulator+ backend. The +run()+ method returns a +BasicAerJob+ instance.
+
+<5> The result of running the circuit (held in a +qiskit.Result+ instance) is obtained with the +result()+ method of the +BasicAerJob+ instance.
+
+<6> A Python dictionary containing the measurement outcomes per basis state is obtained with the +get_counts()+ method of the +Result+ instance.
+
+<7> The measurement outcomes are printed in the `output`.
+
+
+==== Using the BasicAer statevector_simulator Backend
+
+The following code snippet uses the `statevector_simulator`, whose main purpose is to run a circuit and hold its resultant statevector:
+
+[source,python]
+----
+from qiskit import QuantumCircuit, BasicAer, \
+                                   transpile
+
+qc = QuantumCircuit(2) <1>
+qc.h(0)
+qc.cx(0, 1)
+
+backend = \
+    BasicAer.get_backend("statevector_simulator") <2>
+tqc = transpile(qc, backend) <3>
+job = backend.run(tqc) <4>
+result = job.result() <5>
+statevector = result.get_statevector(tqc, 4) <6>
+print(statevector)
+
+
+output: <7>
+  [0.7071+0.j 0.+0.j 0.+0.j 0.7071+0.j]
+----
+
+Let's take a closer look at some relevant lines in the code [.keep-together]#snippet#:
+
+<1> Because measurement instructions collapse quantum states, the +BasicAer+ +statevector_simulator+ backend is most useful for circuits without measurement instructions. The +statevector_simulator+ is "one-shot," so if there are measurements, you could get a different statevector each time.
+
+<2> A reference to the +statevector_simulator+ backend (implemented by the +StatevectorSimulatorPy+ class) is obtained.
+
+<3> The circuit is _transpiled_ with the +transpile()+ function to use only gates available on the +BasicAer+ +statevector_simulator+.
+
+<4> The transpiled circuit is passed to the +run()+ method of the +BasicAer+ +statevector_simulator+ backend. The +run()+ method returns a +BasicAerJob+ instance.
+
+<5> The result of running the circuit (held in a +qiskit.Result+ instance) is obtained with the +result()+ method of the +BasicAerJob+ instance.
+
+<6> A list of complex probability amplitudes containing up to four decimal places that express a statevector is obtained with the +get_statevector()+ method of the +Result+ instance.
+
+<7> The statevector is printed in the `output`.
+
+==== Using the BasicAer unitary_simulator Backend
+
+To complete our tour of `BasicAer` backends, we’ll take a look at the `unitary_simulator` in the following code snippet, whose main purpose is to run a circuit and hold a unitary matrix that
+represents the circuit:
+
+[source,python]
+----
+from qiskit import QuantumCircuit, BasicAer, \
+                                   transpile
+
+qc = QuantumCircuit(2) <1>
+qc.h(0)
+qc.cx(0, 1)
+
+backend = \
+    BasicAer.get_backend("unitary_simulator") <2>
+tqc = transpile(qc, backend) <3>
+job = backend.run(tqc) <4>
+result = job.result() <5>
+unitary = result.get_unitary(tqc, 4) <6>
+print(unitary)
+
+
+output: <7>
+  [[ 0.7071+0.0000j  0.7071-0.0000j
+     0.0000+0.0000j  0.0000+0.0000j]
+   [ 0.0000+0.0000j  0.0000+0.0000j
+     0.7071+0.0000j -0.7071+0.0000j]
+   [ 0.0000+0.0000j  0.0000+0.0000j
+     0.7071+0.0000j  0.7071-0.0000j]
+   [ 0.7071+0.0000j -0.7071+0.0000j
+     0.0000+0.0000j  0.0000+0.0000j]]
+----
+
+Let's take a closer look at some relevant lines in the code [.keep-together]#snippet#:
+
+<1> The +BasicAer+ +unitary_simulator+ backend is useful only for circuits without measurement or reset instructions, as they are not supported by the +unitary_simulator+.
+
+<2> A reference to the +unitary_simulator+ backend (implemented by the +UnitarySimulatorPy+ class) is obtained.
+
+<3> The circuit is _transpiled_ with the +transpile()+ function to use only gates available on the +BasicAer+ +unitary_simulator+.
+
+<4> The transpiled circuit is passed to the +run()+ method of the +BasicAer+ +unitary_simulator+ backend. The +run()+ method returns a +BasicAerJob+ instance.
+
+<5> The result of running the circuit (held in a +qiskit.Result+ instance) is obtained with the +result()+ method of the +BasicAerJob+ instance.
+
+<6> A square matrix of complex numbers that express the circuit's unitary (transition amplitudes) is obtained with the +get_unitary()+ method of the +Result+ instance.
+
+<7> The unitary matrix is printed in the `output`.
+
+
+[NOTE]
+====
+As an alternative to calling the +run()+ method of any of the simulator backends, you could call the +execute()+ function. This function is located in the +qiskit.execute_function+ module, and it relieves you of the responsibility of calling the +transpile()+ function.
+====
+
+
+Now we'll turn our attention to the +qiskit.providers.aer+ module, which contains a comprehensive set of high-performance simulators often referred to as _Aer_ simulators.
+
+[[using_aer_simulators]]
+=== Using the Aer Simulators
+
+As with any backend provider, a list of available +Aer+ backends may be obtained by calling the provider's +backends()+ method as shown in the following code snippet:
+
+[source,python]
+----
+from qiskit import Aer
+
+print(Aer.backends())
+
+
+output:
+[AerSimulator('aer_simulator'),
+AerSimulator('aer_simulator_statevector'),
+AerSimulator('aer_simulator_density_matrix'),
+AerSimulator('aer_simulator_stabilizer'),
+AerSimulator('aer_simulator_matrix_product_state'),
+AerSimulator('aer_simulator_extended_stabilizer'),
+AerSimulator('aer_simulator_unitary'),
+AerSimulator('aer_simulator_superop'),
+QasmSimulator('qasm_simulator'),
+StatevectorSimulator('statevector_simulator'),
+UnitarySimulator('unitary_simulator'),
+PulseSimulator('pulse_simulator')]
+----
+
+We'll examine several of these +Aer+ simulator backends, beginning with the three legacy simulators that resemble their [.keep-together]#+BasicAer+# counterparts. These legacy simulators are faster than the Python-implemented +BasicAer+ simulators but have similar APIs.
+
+==== Using the Aer Legacy Simulators
+
+The +Aer+ provider has received greatly enhanced functionality with the introduction of the +AerSimulator+ and +PulseSimulator+ classes. In addition, three of the +Aer+ legacy simulator backends remain. These backends are +qasm_simulator+, +statevector_simulator+, and +unitary_simulator+.
+
+The code for using these +Aer+ legacy simulators is nearly identical to the code for using their +BasicAer+ counterparts. The only difference is that instead of using the +BasicAer+ provider, you'd use the +Aer+ provider. To try this out, run each of the code snippets in <<using_the_basicaer_simulators>>, substituting +BasicAer+ with +Aer+.
+
+Let's move on to the main simulator backend of the +Aer+ provider, named +AerSimulator+.
+
+==== Using the AerSimulator Backend
+
+The +AerSimulator+ backend is very versatile, offering many types of _simulation methods_, the default being +automatic+. The +automatic+ simulation method allows the simulation method to be selected automatically based on the circuit and noise model.
+
+[[aersimulator_hold_measurements]]
+===== Using the AerSimulator to hold measurement results
+
+In the following code snippet, the simulator will hold measurement results due to the presence of measurement instructions in the circuit:
+
+[source,python]
+----
+from qiskit import QuantumCircuit,Aer,transpile
+
+qc = QuantumCircuit(2)
+qc.h(0)
+qc.cx(0, 1)
+qc.measure_all() <1>
+
+backend = Aer.get_backend("aer_simulator") <2>
+tqc = transpile(qc, backend) <3>
+job = backend.run(tqc, shots=1000) <4>
+result = job.result() <5>
+counts = result.get_counts(tqc) <6>
+print(counts)
+
+
+output: <7>
+  {'00': 516, '11': 484}
+----
+
+Let's take a closer look at some relevant lines in the code [.keep-together]#snippet#:
+
+<1> The +AerSimulator+ with +automatic+ simulation method will hold measurement results when measurement instructions are present.
+
+<2> A reference to an +AerSimulator+ backend with the +automatic+ simulation method is obtained by passing +"aer_simulator"+ into the +get_backend()+ method.
+
+<3> The circuit is _transpiled_ with the +transpile()+ function to use only gates available on this backend.
+
+<4> The transpiled circuit and number of +shots+ to perform is passed to the +run()+ method of the backend. The +run()+ method returns an +AerJob+ instance.
+
+<5> The result of running the circuit (held in a +qiskit.Result+ instance) is obtained with the +result()+ method of the +AerJob+ instance.
+
+<6> A Python dictionary containing the measurement outcomes per basis state is obtained with the +get_counts()+ method of the +Result+ instance.
+
+<7> The measurement outcomes are printed in the `output`.
+
+
+Next we'll use the +AerSimulator+ as a statevector simulator.
+
+[[aersimulator_statevector]]
+===== Using the AerSimulator to calculate and hold a statevector
+
+In the following code snippet, the simulator will calculate and hold a statevector:
+
+[source,python]
+----
+from qiskit import QuantumCircuit,Aer,transpile
+
+qc = QuantumCircuit(2) <1>
+qc.h(0)
+qc.cx(0, 1)
+
+backend = Aer.get_backend("aer_simulator") <2>
+qc.save_statevector() <3>
+
+tqc = transpile(qc, backend) <4>
+job = backend.run(tqc) <5>
+result = job.result() <6>
+statevector = result.get_statevector(tqc, 4) <7>
+print(statevector)
+
+
+output: <8>
+  [0.7071+0.j 0.+0.j 0.+0.j 0.7071+0.j]
+----
+
+Let's take a closer look at some relevant lines in the code [.keep-together]#snippet#:
+
+<1> Because measurement instructions collapse quantum states, +AerSimulator+ statevector simulator functionality is most useful for circuits that do not have measurement instructions.
+
+<2> A reference to an +AerSimulator+ backend with the +automatic+ simulation method is obtained by passing +"aer_simulator"+ into the +get_backend()+ method.
+
+<3> The +save_statevector()+ method saves the current simulator quantum state as a statevector. See <<saving_simulator_state>> for other methods that save simulator state in a quantum circuit.
+
+<4> The circuit is _transpiled_ with the +transpile()+ function to use only gates available on this backend.
+
+<5> The transpiled circuit is passed to the +run()+ method of the backend. The +run()+ method returns an +AerJob+ instance.
+
+<6> The result of running the circuit (held in a +qiskit.Result+ instance) is obtained with the +result()+ method of the +AerJob+ instance.
+
+<7> A list of complex probability amplitudes that express the saved statevector is obtained with the +get_statevector()+ method of the +Result+ instance.
+
+<8> The statevector is printed in the `output`.
+
+Now we'll use the +AerSimulator+ as a unitary simulator.
+
+
+[[aersimulator_unitary]]
+===== Using the AerSimulator to calculate and hold a unitary
+
+In the following code snippet, the simulator will calculate and hold a circuit's unitary:
+
+[source,python]
+----
+from qiskit import QuantumCircuit,Aer,transpile
+
+qc = QuantumCircuit(2) <1>
+qc.h(0)
+qc.cx(0, 1)
+
+backend = Aer.get_backend("aer_simulator") <2>
+qc.save_unitary() <3>
+
+tqc = transpile(qc, backend) <4>
+job = backend.run(tqc) <5>
+result = job.result() <6>
+unitary = result.get_unitary(qc, 4) <7>
+print(unitary)
+
+
+output: <8>
+  [[ 0.7071+0.0000j  0.7071-0.0000j
+     0.0000+0.0000j  0.0000+0.0000j]
+   [ 0.0000+0.0000j  0.0000+0.0000j
+     0.7071+0.0000j -0.7071+0.0000j]
+   [ 0.0000+0.0000j  0.0000+0.0000j
+     0.7071+0.0000j  0.7071-0.0000j]
+   [ 0.7071+0.0000j -0.7071+0.0000j
+     0.0000+0.0000j  0.0000+0.0000j]]
+----
+
+Let's take a closer look at some relevant lines in the code [.keep-together]#snippet#:
+
+<1> +AerSimulator+ unitary simulator functionality is only useful for circuits without measurement or reset instructions.
+
+<2> A reference to an +AerSimulator+ backend with the +automatic+ simulation method is obtained by passing +"aer_simulator"+ into the +get_backend()+ method.
+
+<3> The +save_unitary()+ method saves the circuit's unitary matrix. See <<saving_simulator_state>> for other methods that save simulator state in a quantum circuit.
+
+<4> The circuit is _transpiled_ with the +transpile()+ function to use only gates available on this backend.
+
+<5> The transpiled circuit is passed to the +run()+ method of the backend. The +run()+ method returns an +AerJob+ instance.
+
+<6> The result of running the circuit (held in a +qiskit.Result+ instance) is obtained with the +result()+ method of the +AerJob+ instance.
+
+<7> A square matrix of complex numbers that express that the saved unitary is obtained with the +get_unitary()+ method of the +Result+ instance.
+
+<8> The unitary matrix is printed in the output.
+
+
+Now we'll discuss using the +AerSimulator+ for additional simulation methods.
+
+
+===== Using the AerSimulator for additional simulation methods
+
+So far we've examined examples of using the +AerSimulator+ backend with the +automatic+ simulation method to run a circuit and hold either its measurement results, statevector, or unitary matrix. The +AerSimulator+ backend is capable of additional simulation methods, automatically selecting them based on the circuit and noise model. Simulation methods may also be set explicitly.
+
+====== Using set_options() to update the simulation method
+
+The simulation method for an +AerSimulator+ backend may be explicitly updated by calling +set_options()+, passing the desired simulation method from <<aer_simulation_methods_table>> as a keyword argument. For example, the following code snippet may be used to update an +AerSimulator+ backend to use the +density_matrix+ simulation method:
+
+[source,python]
+----
+backend = Aer.get_backend("aer_simulator")
+backend.set_options(method="density_matrix")
+----
+
+
+====== Getting a backend with a preconfigured simulation method
+
+Each of the +Aer+ simulation methods has a corresponding string that may be passed into the +get_backend()+ method. These strings are output in the first code snippet of <<using_aer_simulators>> and may be formed by appending a simulation method from <<aer_simulation_methods_table>> to +"aer_simulator_"+. For example, the following code snippet may be used to get an +AerSimulator+ backend preconfigured with the +density_matrix+ simulation method:
+
+[source,python]
+----
+Aer.get_backend("aer_simulator_density_matrix")
+----
+
+
+====== Passing a simulation method into run()
+
+The simulation method for an +AerSimulator+ backend may be explicitly overridden for a single execution. This is achieved by passing the desired simulation method from <<aer_simulation_methods_table>> as a keyword argument into the +run()+ method. For example, the following code snippet, in which +tqc+ is a transpiled circuit, may be used to override the simulation method of an +AerSimulator+ backend to use the +density_matrix+ simulation method:
+
+[source,python]
+----
+backend = Aer.get_backend("aer_simulator")
+backend.run(tqc, method="density_matrix")
+----
+
+
+<<aer_simulation_methods_table>> contains a list of the +AerSimulator+ simulation [.keep-together]#methods#.
+
+
+[[aer_simulation_methods_table]]
+.+AerSimulator+ simulation methods
+[options="header"]
+|=======
+|Name|Description
+|+automatic+|Default simulation method that selects the simulation method automatically based on the circuit and noise model.
+|+den&#x2060;sity_&#x200b;matrix+|Density matrix simulation that may sample measurement outcomes from noisy circuits with all measurements at the end of the circuit.
+|+extended_&#x200b;sta&#x2060;bilizer+|An approximate simulation for Clifford + T circuits based on a state decomposition into ranked-stabilizer state.
+|+matrix_product_state+|A tensor-network statevector simulator that uses a matrix product state (MPS) representation for the state.
+|+stabilizer+|An efficient Clifford stabilizer state simulator that can simulate noisy Clifford circuits if all errors in the noise model are also Clifford errors.
+|+statevector+|Statevector simulation that can sample measurement outcomes from ideal circuits with all measurements at end of the circuit. For noisy simulations, each shot samples a randomly sampled noisy circuit from the noise model.
+|+superop+|Superoperator matrix simulation of an ideal or noisy circuit. This simulates the superoperator matrix of the circuit itself rather than the evolution of an initial quantum state.
+|+unitary+|Unitary matrix simulation of an ideal circuit. This simulates the unitary matrix of the circuit itself rather than the evolution of an initial quantum state.
+|=======
+
+Notice that some of the simulation method descriptions in <<aer_simulation_methods_table>> mention simulating noisy circuits. The +AerSimulator+ supports this by allowing a noise model to be supplied that expresses error characteristics of a real or hypothetical quantum device.
+
+
+===== Supplying a noise model to an AerSimulator backend
+
+In the following code snippet, a simple custom noise model is created and supplied to an +AerSimulator+ backend:
+
+[source,python]
+----
+from qiskit import QuantumCircuit, Aer, transpile
+from qiskit.providers.aer.noise import \
+        NoiseModel, depolarizing_error
+
+err_1 = depolarizing_error(0.95, 1) <1>
+err_2 = depolarizing_error(0.01, 2)
+noise_model = NoiseModel()
+noise_model.add_all_qubit_quantum_error(err_1,
+                           ['u1', 'u2', 'u3'])
+noise_model.add_all_qubit_quantum_error(err_2,
+                                       ['cx'])
+
+qc = QuantumCircuit(2)
+qc.h(0)
+qc.cx(0, 1)
+qc.measure_all()
+
+backend = Aer.get_backend("aer_simulator")
+backend.set_options(noise_model=noise_model) <2>
+tqc = transpile(qc, backend)
+job = backend.run(tqc, shots=1000)
+result = job.result()
+counts = result.get_counts(tqc)
+print(counts)
+
+output: <3>
+  {'00': 508, '01': 3, '10': 3, '11': 486}
+----
+
+Let's take a closer look at some relevant lines in the code [.keep-together]#snippet#:
+
+<1> Build a simple noise model using classes and functions from the +qiskit.providers.aer.noise+ module.
+
+<2> Supply the noise model to the +AerSimulator+ backend with its +set_options+ method.
+
+<3> Measurement outcomes printed in the `output` reflect the circuit noise.
+
+This example supplied a noise model to an +AerSimulator+ backend. In the next section, we'll create an +AerSimulator+ backend from the characteristics of a real quantum device.
+
+===== Creating an AerSimulator backend from a real device
+
+To simulate a real quantum device, mimicking its configuration and noise model, you may use the +from_backend()+ method of the +AerSimulator+ class as shown in the following code snippet:
+
+[source,python]
+----
+from qiskit import QuantumCircuit, transpile
+from qiskit.providers.aer import AerSimulator
+from qiskit.test.mock import FakeVigo
+
+qc = QuantumCircuit(2)
+qc.h(0)
+qc.cx(0, 1)
+qc.measure_all()
+
+device_backend = FakeVigo() <1>
+backend = \
+    AerSimulator.from_backend(device_backend) <2>
+tqc = transpile(qc, backend)
+job = backend.run(tqc, shots=1000)
+result = job.result()
+counts = result.get_counts(tqc)
+print(counts)
+
+output: <3>
+  {'00': 494, '01': 49, '10': 39, '11': 418}
+----
+
+Let's take a closer look at some relevant lines in the code [.keep-together]#snippet#:
+
+<1> Because available real hardware devices are continually updating, we're using device configuration and noise data that exists in a Qiskit library for this example. To obtain a device backend from a quantum device provider, you could use the following code snippet, where +provider+ is a reference to the provider, and +device+ is the name of the device:
++
+[source,python]
+----
+device_backend = provider.get_backend("device")
+----
+
+<2> An +AerSimulator+ backend is created using the supplied device backend.
+
+<3> The measurement outcomes are printed in the output.
+
+
+=== Monitoring Job Status and Obtaining Results
+
+When running a quantum circuit, a reference to a job (currently a subclass of +qiskit.providers.JobV1+) is returned. This job reference may be used to monitor its status as well as to obtain a reference to a +qiskit.result.Result+ instance. This +Result+ reference may be used to obtain relevant results data from the experiment. Tables <<job_methods_table, 2-2>>, <<result_methods_table, 2-3>>, and <<result_attributes_table, 2-4>> describe some of the commonly used methods and attributes in these classes.
+
+[[job_methods_table]]
+.Commonly used +qiskit.providers.JobV1+ methods
+[options="header"]
+|=======
+|Method name|Description
+|+job_id+|Returns a unique identifier for this job.
+|+backend+|Returns a reference to a subclass of +qiskit.providers.BackendV1+ used for this job.
+|+status+|Returns the status of this job, for example, +JobStatus.QUEUED+, +JobStatus.RUNNING+, or +JobStatus.DONE+.
+|+cancel+|Makes an attempt to cancel the job.
+|+canceled+|Returns a Boolean that indicates whether the job has been canceled.
+|+running+|Returns a Boolean that indicates whether the job is actively running on the quantum simulator or device.
+|+done+|Returns a Boolean that indicates whether the job has successfully run.
+|+in_final_state+|Returns a Boolean that indicates whether the job has finished. If so, it is in one of the final states: +JobStatus.CANCELED+, +JobStatus.DONE+, or +JobStatus.ERROR+.
+|+wait_for_final_state+|Polls the job status for a given duration at a given interval, calling an optional callback method. Returns when the job is in one of the final states or the given duration has expired.
+|+result+|Returns an instance of +qiskit.result.Result+ that holds relevant results data from the experiment.
+|=======
+
+[NOTE]
+====
+Methods in <<job_methods_table>> could be leveraged to create a job monitoring facility. There is already a basic job monitoring facility in the +qiskit.tools+ package, implemented in the +job_monitor+ function.
+====
+
+[[result_methods_table]]
+.Commonly used +qiskit.result.Result+ methods
+[options="header"]
+|=======
+|Method name|Description
+|+get_counts+|Returns a dictionary containing the count of measurement outcomes per basis state, if available.
+|+get_memory+|Returns a list containing a basis state resulting from each shot, if available. Requires that the +memory+ option is +True+.
+|+get_[.keep-together]#statevector#+|Returns a list of complex probability amplitudes that express a saved statevector, if available.
+|+get_unitary+|Return a unitary matrix of complex numbers that represents the circuit, if available.
+|+data+|Returns the raw data for an experiment.
+|+to_dict+|Returns a dictionary representation of the +results+ attribute (see <<result_attributes_table>>).
+|=======
+
+[[result_attributes_table]]
+.Commonly used +qiskit.result.Result+ attributes
+[options="header"]
+|=======
+|Attribute name|Description
+|+backend_name+|Holds the name of the backend quantum simulator or device.
+|+backend_[.keep-together]#version#+|Holds the version of the backend quantum simulator or device.
+|+job_id+|Holds a unique identifier for the job that produced this result.
+|+results+|List containing results of experiments run. Note that all of our examples run just one circuit at a time.
+|+success+|Indicates whether experiments ran successfully.
+|=======
+
+
+

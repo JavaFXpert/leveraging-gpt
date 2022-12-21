@@ -1,0 +1,94 @@
+[preface]
+== Preface
+
+Qiskit is an open source SDK (software development kit) for working with quantum computers at the level of pulses, circuits, and application modules. The purpose of this book is to provide a succinct guide for developers to use while creating applications that leverage quantum computers and simulators.
+
+We hope this book will enable developers to actively participate in the open source Qiskit community. The Qiskit community, as well as documentation, tutorials, and other resources, is https://qiskit.org[available at Qiskit].
+
+=== How This Book Is Structured
+
+Our goal in this guide is to address much of the functionality of Qiskit that application developers will routinely use. Some of this Qiskit functionality is considered to be fundamental to quantum computing. Other Qiskit functionality supports quantum computing concepts such as quantum information and quantum algorithms. Qiskit has additional functionality that we've deemed essential for quantum application development. We've structured the book at a high level according to the aforementioned functionality, with individual chapters drilling into the specifics. The chapters are divided into three parts:
+
+_Part I: Qiskit Fundamentals_:: In the first part of the book, we show you how to use Qiskit to create quantum circuits. Quantum circuits contain instructions and gates, so we discuss how to use the ones provided in Qiskit, as well as how to create your own. We then show you how to run quantum circuits on quantum computers and simulators and demonstrate how to visualize results. To round out Part I, we discuss the _transpiler_ and how it converts a quantum circuit into instructions that run on a target quantum computer or simulator.
+
+_Part II: Quantum Information and Algorithms_:: In the second part of this book, we discuss Qiskit modules responsible for implementing quantum information concepts (specifically states, operators, channels, and measures). We also present facilities in Qiskit that implement quantum algorithms, as well as a facility known in Qiskit as _operator flow_. A developer may use some of the functionality in Part II to develop quantum applications at higher levels of abstraction than quantum circuits.
+
+_Part III: Additional Essential Functionality_:: In the third and final part of this book, we cover essential Qiskit functionality, some of which drills into information already discussed and some of which is newly presented. Specifically, we explore the _standard operations_ of the Qiskit circuit library, and new ground is uncovered when we discuss how to work with quantum providers and backends. In addition, we'll introduce QASM 3.0 and demonstrate how to create quantum programs with this quantum assembly language.
+
+
+=== Conventions Used in This Book
+
+The following typographical conventions are used in this book:
+
+_Italic_:: Indicates new terms, URLs, email addresses, filenames, and file extensions.
+
++Constant width+:: Used for program listings, as well as within paragraphs to refer to program elements such as variable or function names, databases, data types, environment variables, statements, and keywords.
+
+[NOTE]
+====
+This element signifies a general note.
+====
+
+=== Using Code Examples
+++++
+<!--PROD: Please reach out to author to find out if they will be uploading code examples to oreilly.com or their own site (e.g., GitHub). If there is no code download, delete this whole section. If there is, when you email digidist with the link, let them know what you filled in for title_title (should be as close to book title as possible, i.e., learning_python_2e). This info will determine where digidist loads the files.-->
+++++
+
+Supplemental material (code examples, exercises, etc.) is available for download at  pass:[<em class="hyperlink"><a href="https://github.com/qiskit-community/qiskit-pocket-guide#readme">https://github.com/qiskit-community/qiskit-pocket-guide#readme</a></em>].
+
+If you have a technical question or a problem using the code examples, please send email to pass:[<a class="email" href="mailto:bookquestions@oreilly.com"><em>bookquestions@oreilly.com</em></a>].
+
+This book is here to help you get your job done. In general, if example code is offered with this book, you may use it in your programs and documentation. You do not need to contact us for permission unless you’re reproducing a significant portion of the code. For example, writing a program that uses several chunks of code from this book does not require permission. Selling or distributing examples from O’Reilly books does require permission. Answering a question by citing this book and quoting example code does not require permission. Incorporating a significant amount of example code from this book into your product’s documentation does require permission.
+
+We appreciate, but generally do not require, attribution. An attribution usually includes the title, author, publisher, and ISBN. For example: “_Qiskit Pocket Guide_ by James L. Weaver and Frank J. Harkins (O’Reilly). Copyright 2022 James Weaver and Frank J. Harkins, 978-1-098-11247-9.”
+
+If you feel your use of code examples falls outside fair use or the permission given, please contact us at pass:[<a class="email" href="mailto:permissions@oreilly.com"><em>permissions@oreilly.com</em></a>].
+
+=== O'Reilly Online Learning
+
+[role = "ormenabled"]
+[NOTE]
+====
+For more than 40 years, pass:[<a href="http://oreilly.com" class="orm:hideurl"><em class="hyperlink">O’Reilly Media</em></a>] has provided technology and business training, knowledge, and insight to help companies succeed.
+====
+
+Our unique network of experts and innovators share their knowledge and expertise through books, articles, and our online learning platform. O’Reilly’s online learning platform gives you on-demand access to live training courses, in-depth learning paths, interactive coding environments, and a vast collection of text and video from O'Reilly and 200+ other publishers. For more information, visit pass:[<a href="http://oreilly.com" class="orm:hideurl"><em>http://oreilly.com</em></a>].
+
+=== How to Contact Us
+
+Please address comments and questions concerning this book to the publisher:
+
+++++
+<ul class="simplelist">
+  <li>O’Reilly Media, Inc.</li>
+  <li>1005 Gravenstein Highway North</li>
+  <li>Sebastopol, CA 95472</li>
+  <li>800-998-9938 (in the United States or Canada)</li>
+  <li>707-829-0515 (international or local)</li>
+  <li>707-829-0104 (fax)</li>
+</ul>
+++++
+
+We have a web page for this book, where we list errata, examples, and any additional information. You can access this page at https://oreil.ly/qiskit-pocket-guide[].
+
+++++
+<!--Don't forget to update the link above.-->
+++++
+
+Email pass:[<a class="email" href="mailto:bookquestions@oreilly.com"><em>bookquestions@oreilly.com</em></a>] to comment or ask technical questions about this book.
+
+For news and information about our books and courses, visit link:$$https://oreilly.com$$[].
+
+Find us on LinkedIn: link:$$https://linkedin.com/company/oreilly-media$$[].
+
+Follow us on Twitter: link:$$https://twitter.com/oreillymedia$$[].
+
+Watch us on YouTube: link:$$https://www.youtube.com/oreillymedia$$[].
+
+=== Acknowledgments
+
+This book would not have been possible without a supporting team of innovative people at IBM Quantum and in the larger quantum computing community. The authors would like to thank the amazing O'Reilly team, including Luciano, Bello, Kristen Brown, Danny Elfanbaum, Shira Evans, Zan McQuade, Jonathon Owen, Kim Sandoval, and Katherine Tozer. The authors also appreciate the invaluable contributions made by technical reviewers Luciano Bello, Nick Bronn, Barry Burd, Eric Johnston, Robert Loredo, and Iskandar Sitdikov.
+
+James Weaver would like to thank Julie, Lori, Kelli, Kaleb, Jillian, Levi, and Oliver for their understanding and encouragement while working on this book. As a lifelong classical developer, James is also thankful that quantum mechanical phenomena baked into nature may potentially be leveraged to solve problems not possible with classical computers. "The heavens declare the glory of God, and the sky above proclaims his handiwork" (Psalm 19:1).
+
+Frank Harkins would like to thank the Qiskit team for all their great work on Qiskit and its documentation and for answering all his questions. Frank would also like to thank Rose, Matt, Joanne, Keith, Libby, and Martha for their constant support over the course of writing this book.

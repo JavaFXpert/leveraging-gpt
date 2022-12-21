@@ -1,0 +1,289 @@
+[[backends_chapter]]
+== Working with Providers [.keep-together]#and Backends#
+
+There are lots of different ways to run quantum circuits and quantum algorithms. If we want to see how a noise-free quantum computer behaves, we could choose from a few different simulators (e.g., `statevector` or `unitary`), and we're not limited to just local simulators. Chances are, at some point you will want to run a circuit on a real quantum system, accessed remotely.
+
+To manage all these options, and ensure all backends are compatible with the same data types, Qiskit defines a general +Backend+ object. This makes it easier to interchange backends in our code (and also to remember what the right code is in the first place). You've already seen these +Backend+ objects in action, as we use the +Backend.run()+ method every time we run a circuit. Real quantum systems have unique properties that can change regularly. The +Backend+ object also helps us access this information so we can investigate different systems, and make decisions about which systems to use. We can access this information both programmatically and through graphical user interfaces.
+
+These +Backend+ objects are organized by _providers_. If you've read the rest of this book, you will have used the +Aer+ and +BasicAer+ providers, which manage simulator backends that run on your local machine (e.g., using +.get_backend()+ to retrieve a backend object by name), but we can install other providers to use other backends (real or simulated). Examples are the IBM Quantum provider (from the +qiskit-ibmq-provider+ Python package) through which we can access IBM Quantum's online backends, or the IonQ provider (from the +qiskit-ionq+ package) to access IonQ's online backends.
+
+Qiskit and its provider interface allow us to search through these backends and provide some useful functionality for remote services that we'll explore later in this chapter. In this chapter, we'll use IBM Quantum's provider for the examples, but other providers are available, and you can even write your own. To set up a provider for remote backends, you'll usually need to make an account with them and save an API key to your environment. The code for IBM Quantum is shown here, but other providers will have their own instructions:
+
+[source,python]
+----
+from qiskit import IBMQ
+IBMQ.save_account('API_TOKEN')
+----
+
+Qiskit stores your token as an environment variable, so you need to save your account only once. You can then access the open provider using the following code:
+
+[source,python]
+----
+from qiskit import IBMQ
+provider = IBMQ.load_account()
+----
+
+=== Graphical Tools
+
+For users working in Jupyter environments, Qiskit provides some graphical tools. You can install these using the following command:
+
+[source,bash]
+----
+pip install qiskit[visualization]
+----
+
+Once installed, we can activate these tools with this line of code:
+
+[source,python]
+----
+import qiskit.tools.jupyter
+----
+
+This will enable some Jupyter "magics" (commands specific to this environment) and will patch some objects to enable richer representations.
+
+We can see this in action here. We import a mock backend and ask Jupyter to display it by returning it as the last line in the cell:
+
+[source,python]
+----
+from qiskit.test.mock import FakeVigo
+FakeVigo()
+----
+
+<<vigo_gui_interface>> shows the output of the preceding code in a Jupyter Notebook:
+
+[[vigo_gui_interface]]
+.Screenshot of the interactive backend graphical user interface (GUI) in a Jupyter Notebook
+image::images/qkpg_0901.png[""]
+
+This displays an interactive panel with images and switchable tabs. We can also now use magic commands, such as +%qiskit_version_table+, which displays the Qiskit version information as an HTML table. If we have the IBM Quantum provider set up, we can use the +%backend_overview+ command to display an interface with information on its remote systems (such as queue times and system properties).
+
+<<backend_overview_gui>> shows the +%backend_overview+ GUI in a Jupyter Notebook cell.
+
+[[backend_overview_gui]]
+.The backend overview GUI in a Jupyter Notebook, showing details and status of available backends
+image::images/qkpg_0902.png[""]
+
+=== Text-Based Tools
+
+For non-Jupyter environments, some tools are also available as text-based tools. For example, there is a Python function with a similar job to the +%backend_overview+ magic:
+
+[source,python]
+----
+from qiskit.tools import backend_overview
+backend_overview()
+----
+
+The preceding code prints output similar to the text that follows. The output will depend on the backends available, and some text is omitted to save space:
+
+[source]
+----
+ibm_washington               ibm_perth          
+--------------               ---------          
+Num. Qubits:  127            Num. Qubits:  7    
+Pending Jobs: 133            Pending Jobs: 1    
+Least busy:   False          Least busy:   False
+Operational:  True           Operational:  True 
+Avg. T1:      97.2           Avg. T1:      173.6
+Avg. T2:      96.5           Avg. T2:      133.9
+
+
+ibm_cairo                    ibm_lagos          
+---------                    ---------          
+Num. Qubits:  27             Num. Qubits:  7    
+Pending Jobs: 7              Pending Jobs: 9    
+Least busy:   False          Least busy:   False
+Operational:  True           Operational:  True 
+Avg. T1:      96.6           Avg. T1:      145.5
+Avg. T2:      107.1          Avg. T2:      109.3
+----
+
+Similarly, we can print a textual summary of a backend using the +backend_monitor+ function:
+
+[source,python]
+----
+from qiskit import IBMQ
+provider = IBMQ.load_account()
+armonk = provider.get_backend('ibmq_armonk')
+
+from qiskit.tools import backend_monitor
+backend_monitor(armonk)
+----
+
+This code will print output similar to the output that follows (again, some text is omitted, and the values will change depending on the backend):
+
+[source]
+----
+ibmq_armonk
+===========
+Configuration
+-------------
+    n_qubits: 1
+    operational: True
+    status_msg: active
+    pending_jobs: 80
+    backend_version: 2.4.29
+    basis_gates: ['id', 'rz', 'sx', 'x']
+    local: False
+    simulator: False
+    conditional_latency: []
+    ...
+----
+
+=== Getting System Info Programmatically
+
+We can also get a backend's information in a format that's easy to work with in Python. This is how the transpiler knows how to prepare and optimize a circuit for a specific system, given only the backend object. Qiskit splits information about a backend into three categories:
+
+- The _configuration_ is information about the system that doesn't change with time. Examples include the number of qubits and the coupling map. We access this through the +.configuration()+ method.
+- The _properties_ is information that _can_ change with time and requires remeasuring and calibrating. Examples include the gate errors and decoherence times of the qubits. We access this through the +.properties()+ method.
+- The _options_ are the default settings used when running jobs on the backend. We can override these when using the +.run()+ method (e.g., +.run(qc, shots=2048)+), or change these defaults for an instance of a backend. We access these through the +.options+ attribute.
+
+We can pair these methods and attributes with the provider interface to automatically select backends that fit certain criteria. The last line in the following code snippet returns a list of backends that are _not_ simulators and that have more than three qubits:
+
+[source,python]
+----
+def is_ok_backend(backend):
+    return (
+        not backend.configuration().simulator
+        and backend.configuration().num_qubits > 3)
+
+provider.backends(filters=is_ok_backend)
+----
+
+The data available from +.configuration()+ and +.properties()+ depends on the backend, but we can inspect this using Python's +vars()+ function. In the next code snippet, we show the information available from the +FakeVigo+ device (we've omitted some text to save space):
+
+
+[source,python]
+----
+from qiskit.test.mock import FakeVigo
+vars(FakeVigo().configuration())
+----
+
+[source]
+----
+{'_data': {'allow_q_object': True,
+  'meas_map': [[0, 1, 2, 3, 4]],
+  'multi_meas_enabled': False,
+  'quantum_volume': 16,
+  'url': 'None',
+  'allow_object_storage': True},
+ 'backend_name': 'fake_vigo',
+ 'backend_version': '1.3.6',
+ 'n_qubits': 5,
+ 'basis_gates': ['id', 'rz', 'sx', 'x', 'cx'],
+ ...
+ 'online_date': datetime.datetime(2019, 7, 3, 4, 0,
+                                  tzinfo=tzutc()),
+ 'description': '5 qubit device Vigo',
+ 'dt': 2.2222222222222221e-10,
+ 'dtm': 2.2222222222222221e-10}
+----
+
+The ability to get this information programmatically is particularly useful when finding specific properties across different devices or when collecting data. The following code finds the two qubits with the lowest CNOT error rate between them, out of all the devices from the provider:
+
+[source,python]
+----
+def find_best_cx(provider):
+    """Find the best (lowest error) CXGate
+    across all qubits available in `provider`"""
+
+    best_err, best_backend, best_pair = (
+        1, None, None)
+    for backend in provider.backends():
+        conf = backend.configuration()
+    
+        # skip simulators & single-qubit devices
+        if conf.simulator or conf.num_qubits < 2:
+            continue
+    
+        for pair in conf.coupling_map:
+            err = backend.properties().gate_error(
+                                          'cx', pair)
+            if err < best_err:
+                best_err, best_backend, best_pair = (
+                    err, backend, pair)
+     
+    return (best_backend, best_pair, best_err)
+----
+
+Finally, we can view and change a backend's default options through the +.options+ attribute. This next code block shows the default options for +FakeVigo+ (again, with some information omitted):
+
+[source,python]
+----
+vigo = FakeVigo()
+vigo.options
+
+Options(shots=1024, method=None, device='CPU',
+precision='double', seed_simulator=None, ...,
+mps_omp_threads=1)
+----
+
+These are the default values +vigo+ will use when running circuits. If we overwrite these (e.g., with +vigo.options.shots = 2048+), this will change the default for this instance of the object, i.e., +vigo.run(qc)+ will use the new number of shots. Note that this will not overwrite the default for _other_ instances of the object, so running +vigo = FakeVigo()+ will reset +vigo.options+ to its initial state.
+
+=== Interacting with Quantum Systems [.keep-together]#on the Cloud#
+
+So far, we've treated remote backends in the same way as local backends, and all the functionality we've seen so far in the chapter applies to both. When using remote backends, however, we will often have to wait for network processes and device queues, which we don't experience with local backends. Qiskit includes some tools to help with this.
+
+==== Convenience Tools
+
+The +job_monitor+ function regularly checks the status of a job and displays it to the user. If +backend+ is a remote +Backend+ object, and +qc+ is a valid +QuantumCircuit+, then this code runs the circuit remotely and monitors the job:
+
+[source,python]
+----
+from qiskit.tools import job_monitor
+job = backend.run(qc)
+job_monitor(job)
+----
+
+As the job progresses, we'll see updates printed, such as the following:
+
+[source,python]
+----
+Job Status: job is being validated
+Job Status: job is queued (1)
+Job Status: job is actively running
+Job Status: job has successfully run
+----
+
+==== Runtime Services
+
+As we've seen, processing and queueing jobs can add a significant wait time to our experiments. While this is OK for one-off circuit executions, it makes carrying out any experiment that requires feedback loops between circuit creators and circuit results difficult. Variational algorithms (such as the VQE, discussed in <<algorithms_chap>>) are one such example.
+
+As a solution, providers can offer runtime services that accept inputs for algorithms and that run these algorithms in full (not resubmitting jobs for each circuit execution). For example, the following code defines a VQE algorithm as a dictionary. This includes the problem (the variable +op+ here), and other algorithm parameters. Refer to <<algorithms_chap>> for more information on the VQE algorithm:
+
+[source,python]
+----
+from qiskit.circuit.library import TwoLocal
+from qiskit.algorithms.optimizers import COBYLA
+from qiskit.opflow import X, Y, Z, I
+
+op = ( .5 * (X ^ Y ^ Z)
+     + .2 * (Y ^ Y ^ I)
+     - .3 * (Z ^ X ^ Z)
+     + .2 * (I ^ X ^ Y))
+
+runtime_inputs = {
+  'ansatz': TwoLocal(3, 'rx', 'cx'),
+  'initial_parameters': 'random',
+  'operator': op,
+  'optimizer': COBYLA(maxiter=500)
+}
+----
+
+With this procedure defined, we can then send this off to our provider to complete the full algorithm and return the results:
+
+[source,python]
+----
+from qiskit import IBMQ
+provider = IBMQ.load_account()
+
+job = provider.runtime.run(
+    program_id='vqe',
+    options={
+        'backend_name': 'ibmq_qasm_simulator'},
+    inputs=runtime_inputs
+)
+
+result = job.result()
+----
+
+The runtime programs available will depend on your provider.

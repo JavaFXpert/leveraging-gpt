@@ -1,0 +1,600 @@
+[[qiskit_circuit_library_chap]]
+== Qiskit Circuit Library Standard Operations
+
+The Qiskit Circuit Library (module +qiskit.circuit.library+) contains many operations and circuits that may be used as building blocks for implementing quantum algorithms. Here are some standard operations categorized as instructions, single-qubit gates, and multiqubit gates.
+
+=== Standard Instructions
+The standard instruction classes implement quantum operations that aren't necessarily unitary. They are subclasses of the +Instruction+ class (see <<the_instruction_class>>).
+
+
+[[barrier_class]]
+==== Barrier
+The +Barrier+ class creates a barrier instruction (see <<creating_a_barrier>>) with a given number of qubits. A barrier provides both visual and functional separation between gates on a wire in a quantum circuit:
+
+[role="pagebreak-before less_space"]
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+Barrier(num_qubits)+
+|image:images/circ_lib/barrier.png["Barrier appearance"]
+|=======
+
+[[measure_class]]
+==== Measure
+The +Measure+ class creates a measurement instruction for measuring a quantum state in the computational basis, placing the binary result in a classical register (see <<measuring_a_quantum_circuit>>):
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+Measure()+
+|image:images/circ_lib/measure.png["Measure appearance"]
+|=======
+
+
+[[reset_class]]
+==== Reset
+The +Reset+ class creates a reset instruction that resets the qubit state to latexmath:[$ \vert0\rangle$] (see <<using_the_reset_method>>):
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+Reset()+
+|image:images/circ_lib/reset.png["Reset appearance"]
+|=======
+
+
+=== Standard Single-Qubit Gates
+The standard single-qubit gates implement unitary quantum operations. They are subclasses of the +Gate+ class (see <<the_gate_class>>). These gates may be created and applied to a circuit via the single-qubit gate methods of the +QuantumCircuit+ class that appear in <<single_qubit_gates_table>>.
+
+[[hgate_class]]
+==== HGate
+The +HGate+ class creates a single-qubit H gate. It performs a π rotation around the X + Z axis. It also has the effect of changing the computational basis from latexmath:[$ \vert0\rangle$],latexmath:[$ \vert1\rangle$] to latexmath:[$ \vert+\rangle$],latexmath:[$ \vert-\rangle$] and vice-versa:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance|Matrix
+|+HGate(label=None)+
+|image:images/circ_lib/hgate.png["HGate appearance"]
+|latexmath:[$ \frac{1}{\sqrt{2}}
+\begin{pmatrix}
+1 & 1 \\
+1 & -1
+\end{pmatrix}$]
+|=======
+
+
+[[igate_class]]
+==== IGate
+The +IGate+ class creates a single-qubit I gate, which has no effect on the state of a qubit:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance|Matrix
+|+IGate(label=None)+
+|image:images/circ_lib/igate.png["IGate appearance"]
+|latexmath:[$ \begin{pmatrix}
+1 & 0 \\
+0 & 1
+\end{pmatrix}$]
+|=======
+
+
+[[phasegate_class]]
+==== PhaseGate
+The +PhaseGate+ class creates a single-qubit Phase gate that performs a given phase rotation:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance|Matrix
+|+PhaseGate(theta, label=None)+
+|image:images/circ_lib/phasegate.png["PhaseGate appearance"]
+|latexmath:[$ \begin{pmatrix}
+1 & 0 \\
+0 & e^{i\lambda}
+\end{pmatrix}$]
+|=======
+
+
+[[rxgate_class]]
+==== RXGate
+The +RXGate+ class creates a single-qubit RX gate that performs a given rotation around the X axis:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance|Matrix
+|+RXGate(theta, label=None)+
+|image:images/circ_lib/rxgate.png["RXGate appearance"]
+|latexmath:[$ \begin{pmatrix}
+\cos{\frac{\theta}{2}}   & -i\sin{\frac{\theta}{2}} \\
+-i\sin{\frac{\theta}{2}} & \cos{\frac{\theta}{2}}
+\end{pmatrix}$]
+|=======
+
+
+[[rygate_class]]
+==== RYGate
+The +RYGate+ class creates a single-qubit RY gate that performs a given rotation around the Y axis:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance|Matrix
+|+RYGate(theta, label=None)+
+|image:images/circ_lib/rygate.png["RYGate appearance"]
+|latexmath:[$ \begin{pmatrix}
+\cos{\frac{\theta}{2}} & -\sin{\frac{\theta}{2}} \\
+\sin{\frac{\theta}{2}} & \cos{\frac{\theta}{2}}
+\end{pmatrix}$]
+|=======
+
+
+[[rzgate_class]]
+==== RZGate
+The +RZGate+ class creates a single-qubit RZ gate that performs a given rotation around the Z axis:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance|Matrix
+|+RZGate(phi, label=None)+
+|image:images/circ_lib/rzgate.png["RZGate appearance"]
+|latexmath:[$ \begin{pmatrix}
+e^{-i\frac{\lambda}{2}} & 0 \\
+0 & e^{i\frac{\lambda}{2}}
+\end{pmatrix}$]
+|=======
+
+
+[[sgate_class]]
+==== SGate
+The +SGate+ class creates a single-qubit S gate that performs a π/2 phase rotation:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance|Matrix
+|+SGate(label=None)+
+|image:images/circ_lib/sgate.png["SGate appearance"]
+|latexmath:[$ \begin{pmatrix}
+1 & 0 \\
+0 & i
+\end{pmatrix}$]
+|=======
+
+
+[[sdggate_class]]
+==== SdgGate
+The +SdgGate+ class creates a single-qubit S† gate that performs a -π/2 phase rotation:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance|Matrix
+|+SdgGate(label=None)+
+|image:images/circ_lib/sdggate.png["SdgGate appearance"]
+|latexmath:[$ \begin{pmatrix}
+1 & 0 \\
+0 & -i
+\end{pmatrix}$]
+|=======
+
+
+[[sxgate_class]]
+==== SXGate
+The +SXGate+ class creates a single-qubit square root of X gate that performs a π/2 rotation around the X axis while shifting the global phase by π/4:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance|Matrix
+|+SXGate(label=None)+
+|image:images/circ_lib/sxgate.png["SXGate appearance"]
+|latexmath:[$ \frac{1}{2} \begin{pmatrix}
+1 + i & 1 - i \\
+1 - i & 1 + i
+\end{pmatrix}$]
+|=======
+
+
+[[sxdggate_class]]
+==== SXdgGate
+The +SXdgGate+ class creates a single-qubit inverse square root of X gate that performs a -π/2 rotation around the X axis while shifting the global phase by -π/4:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance|Matrix
+|+SXdgGate(label=None)+
+|image:images/circ_lib/sxdggate.png["SXdgGate appearance"]
+|latexmath:[$ \frac{1}{2} \begin{pmatrix}
+1 - i & 1 + i \\
+1 + i & 1 - i
+\end{pmatrix}$]
+|=======
+
+
+[[tgate_class]]
+==== TGate
+The +TGate+ class creates a single-qubit T gate that performs a π/4 phase rotation:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance|Matrix
+|+TGate(label=None)+
+|image:images/circ_lib/tgate.png["TGate appearance"]
+|latexmath:[$ \begin{pmatrix}
+1 & 0 \\
+0 & e^{i\pi/4}
+\end{pmatrix}$]
+|=======
+
+
+[[tdggate_class]]
+==== TdgGate
+The +TdgGate+ class creates a single-qubit T† gate that performs a -π/4 phase rotation:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance|Matrix
+|+TdgGate(label=None)+
+|image:images/circ_lib/tdggate.png["TdgGate appearance"]
+|latexmath:[$ \begin{pmatrix}
+1 & 0 \\
+0 & e^{-i\pi/4}
+\end{pmatrix}$]
+|=======
+
+
+[[ugate_class]]
+==== UGate
+The +UGate+ class creates a single-qubit U gate with three Euler angles:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance|Matrix
+|+UGate(theta, phi, lam, label=None)+
+|image:images/circ_lib/ugate.png["UGate appearance"]
+|latexmath:[$ \begin{pmatrix}
+\cos(\th)          & -e^{i\lambda}\sin(\th) \\
+e^{i\phi}\sin(\th) & e^{i(\phi+\lambda)}\cos(\th)
+\end{pmatrix}$]
+|=======
+
+
+[[xgate_class]]
+==== XGate
+The +XGate+ class creates a single-qubit X gate that performs a π rotation around the X axis:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance|Matrix
+|+XGate(label=None)+
+|image:images/circ_lib/xgate.png["XGate appearance"]
+|latexmath:[$ \begin{pmatrix}
+0 & 1 \\
+1 & 0
+\end{pmatrix}$]
+|=======
+
+
+[[ygate_class]]
+==== YGate
+The +YGate+ class creates a single-qubit Y gate that performs a π rotation around the Y axis:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance|Matrix
+|+YGate(label=None)+
+|image:images/circ_lib/ygate.png["YGate appearance"]
+|latexmath:[$ \begin{pmatrix}
+0 & -i \\
+i & 0
+\end{pmatrix}$]
+|=======
+
+
+[[zgate_class]]
+==== ZGate
+The +ZGate+ class creates a single-qubit Z gate that performs a π rotation around the Z axis:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance|Matrix
+|+ZGate(label=None)+
+|image:images/circ_lib/zgate.png["ZGate appearance"]
+|latexmath:[$ \begin{pmatrix}
+1 & 0 \\
+0 & -1
+\end{pmatrix}$]
+|=======
+
+
+
+=== Standard Multiqubit Gates
+The standard multiqubit gates implement unitary quantum operations. They are subclasses of the +ControlledGate+ class (see <<the_controlled_gate_class>>). Some of these gates may be created and applied to a circuit via the multiqubit gate methods of the +QuantumCircuit+ class, many of which appear in <<multi_qubit_gates_table>>.
+
+[[c3xgate_class]]
+==== C3XGate
+The +C3XGate+ class creates a four-qubit gate that has an X gate and three control qubits:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+C3XGate(label=None, ctrl_state=None)+
+|image:images/circ_lib/c3xgate.png["C3XGate appearance"]
+|=======
+
+
+[[c3sxgate_class]]
+==== C3SXGate
+The +C3SXGate+ class creates a four-qubit gate that has a square root of X gate and three control qubits
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+C3SXGate(label=None, ctrl_state=None, *, angle=None)+
+|image:images/circ_lib/c3sxgate.png["C3SXGate appearance"]
+|=======
+
+
+[[c4xgate_class]]
+==== C4XGate
+The +C4XGate+ class creates a five-qubit gate that has an X gate and four control qubits:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+C4XGate(label=None, ctrl_state=None)+
+|image:images/circ_lib/c4xgate.png["C4XGate appearance"]
+|=======
+
+
+[[ccxgate_class]]
+==== CCXGate
+The +CCXGate+ class creates a three-qubit gate that has an X gate and two control qubits. This is also known as a Toffoli gate:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+CCXGate(label=None, ctrl_state=None)+
+|image:images/circ_lib/ccxgate.png["CCXGate appearance"]
+|=======
+
+
+[[chgate_class]]
+==== CHGate
+The +CHGate+ class creates a controlled-Hadamard gate, applying the Hadamard according to the control qubit state:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+CHGate(label=None, ctrl_state=None)+
+|image:images/circ_lib/chgate.png["CHGate appearance"]
+|=======
+
+
+[[cphasegate_class]]
+==== CPhaseGate
+The +CPhaseGate+ class creates a controlled-phase gate, applying the +PhaseGate+ according to the control qubit state:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+CPhaseGate(theta, label=None, ctrl_state=None)+
+|image:images/circ_lib/cphasegate.png["CPhaseGate appearance"]
+|=======
+
+
+[[crxgate_class]]
+==== CRXGate
+The +CRXGate+ class creates a controlled-RX gate, applying the +RX+ according to the control qubit state:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+CRXGate(theta, label=None, ctrl_state=None)+
+|image:images/circ_lib/crxgate.png["CRXGate appearance"]
+|=======
+
+
+[[crygate_class]]
+==== CRYGate
+The +CRYGate+ class creates a controlled-RY gate, applying the +RY+ according to the control qubit state:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+CRYGate(theta, label=None, ctrl_state=None)+
+|image:images/circ_lib/crygate.png["CRYGate appearance"]
+|=======
+
+
+[[crzgate_class]]
+==== CRZGate
+The +CRZGate+ class creates a controlled-RZ gate, applying the +RZ+ according to the control qubit state:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+CRZGate(theta, label=None, ctrl_state=None)+
+|image:images/circ_lib/crzgate.png["CRZGate appearance"]
+|=======
+
+
+[[cswapgate_class]]
+==== CSwapGate
+The +CSwapGate+ class creates a three-qubit gate whose Swap gate is applied according to the control qubit state:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+CSwapGate(label=None, ctrl_state=None)+
+|image:images/circ_lib/cswapgate.png["CSwapGate appearance"]
+|=======
+
+
+[[csxgate_class]]
+==== CSXGate
+The +CSXGate+ class creates a controlled-SX (square root of X) gate, applying the latexmath:[$ \sqrt{X}$] gate according to the control qubit state:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+CSXGate(label=None, ctrl_state=None)+
+|image:images/circ_lib/csxgate.png["CSXGate appearance"]
+|=======
+
+
+[[cugate_class]]
+==== CUGate
+The +CUGate+ class creates a controlled-U gate, applying the U gate, including a global phase argument, according to the control qubit state:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+CUGate(theta, phi, lam, gamma, label=None, ctrl_state=None)+
+|image:images/circ_lib/cugate.png["CUGate appearance"]
+|=======
+
+
+[[cxgate_class]]
+==== CXGate
+The +CXGate+ class creates a controlled-X gate, applying the X gate according to the control qubit state:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+CXGate(label=None, ctrl_state=None)+
+|image:images/circ_lib/cxgate.png["CXGate appearance"]
+|=======
+
+
+[[cygate_class]]
+==== CYGate
+The +CYGate+ class creates a controlled-Y gate, applying the Y gate according to the control qubit state:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+CYGate(label=None, ctrl_state=None)+
+|image:images/circ_lib/cygate.png["CYGate appearance"]
+|=======
+
+
+[[czgate_class]]
+==== CZGate
+The +CZGate+ class creates a controlled-Z gate, applying the Z gate according to the control qubit state:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+CZGate(label=None, ctrl_state=None)+
+|image:images/circ_lib/czgate.png["CZGate appearance"]
+|=======
+
+
+[[dcxgate_class]]
+==== DCXGate
+The +DCXGate+ class creates a double-CNOT gate. This is a two-qubit gate that has two CNOT gates with their control-qubits on different wires:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+DCXGate()+
+|image:images/circ_lib/dcxgate.png["DCXGate appearance"]
+|=======
+
+
+[[iswapgate_class]]
+==== iSwapGate
+The +iSwapGate+ class swaps the qubit states of two quantum wires. It also changes the phase of latexmath:[$ \vert01\rangle$] and latexmath:[$ \vert10\rangle$] amplitudes [.keep-together]#by _i_:#
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+iSwapGate(label=None, ctrl_state=None)+
+|image:images/circ_lib/iswapgate.png["iSwapGate appearance"]
+|=======
+
+
+[[mcphasegate_class]]
+==== MCPhaseGate
+The +MCPhaseGate+ class creates a multicontrolled Phase gate with a given number of control qubits:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+MCPhaseGate(lam, num_ctrl_qubits, label=None)+
+|image:images/circ_lib/mcphasegate.png["MCPhaseGate appearance"]
+|=======
+
+
+[[mcxgate_class]]
+==== MCXGate
+The +MCXGate+ class creates a multicontrolled X gate with a given number of control qubits. This is a generalization of a Toffoli gate:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+MCXGate(num_ctrl_qubits=None, label=None, ctrl_state=None)+
+|image:images/circ_lib/mcxgate.png["MCXGate appearance"]
+|=======
+
+
+[[swapgate_class]]
+==== SwapGate
+The +SwapGate+ swaps the qubit states of two quantum wires:
+
+[options="unbreakable"]
+[grid="none"]
+|=======
+|Signature|Appearance
+|+SwapGate(label=None)+
+|image:images/circ_lib/swapgate.png["SwapGate appearance"]
+|=======
+
+
+
+
+
+
+
+
+
+
+
+
+
+

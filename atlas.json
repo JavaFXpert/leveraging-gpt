@@ -1,0 +1,66 @@
+{
+  "branch": "main",
+  "files": [
+    "titlepage.html",
+    "copyright.html",
+    "toc.html",
+    "preface.asciidoc",
+    "part_i.asciidoc",
+    "ch01.asciidoc",
+    "ch02_quant_exper.asciidoc",
+    "ch03_viz.asciidoc",
+    "ch04_transpiler.asciidoc",
+    "part_ii.asciidoc",
+    "ch05_info.asciidoc",
+    "ch06_opflow.asciidoc",
+    "ch07_algorithms.asciidoc",
+    "part_iii.asciidoc",
+    "ch08_circ_lib.asciidoc",
+    "ch09_backends.asciidoc",
+    "ch10_qasm.asciidoc",
+    "ix.html",
+    "author_bio.html",
+    "colo.html"
+  ],
+  "formats": {
+    "pdf": {
+      "version": "web",
+      "color_count": "1",
+      "index": true,
+      "toc": true,
+      "syntaxhighlighting": true,
+      "show_comments": false,
+      "trim_size": "7inx9.1875in",
+      "antennahouse_version": "AHFormatterV71_64-MR2"
+    },
+    "epub": {
+      "index": true,
+      "toc": true,
+      "epubcheck": true,
+      "syntaxhighlighting": true,
+      "show_comments": false,
+      "downsample_images": true,
+      "mathmlreplacement": false
+    },
+    "mobi": {
+      "index": true,
+      "toc": true,
+      "syntaxhighlighting": true,
+      "show_comments": false,
+      "downsample_images": false
+    },
+    "html": {
+      "index": true,
+      "toc": true,
+      "syntaxhighlighting": true,
+      "show_comments": false,
+      "consolidated": false
+    }
+  },
+  "theme": "oreillymedia/oreilly_pocketref_theme",
+  "title": "Qiskit Pocket Guide",
+  "print_isbn13": "9781098112479",
+  "lang": "en",
+  "accent_color": "",
+  "templating": false
+}

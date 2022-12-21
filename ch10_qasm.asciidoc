@@ -1,0 +1,589 @@
+[[unique_chapter_id]]
+== OpenQASM
+
+QASM is a low-level, imperative programming language, describing quantum programs in terms of the specific actions the quantum computer should take.
+
+It is an intermediate representation between human-editable descriptions of quantum programs (such as Qiskit's +QuantumCircuit+) and quantum hardware controllers. To enable it to describe full quantum programs, QASM also supports some basic classical logic, similar to higher-level classical languages such as C.
+
+In this chapter, we'll cover only gate-level operations, but QASM does also support some pulse-level quantum programming too.
+
+=== Building Quantum Circuits in QASM
+
+In this section, we'll cover the QASM syntax needed to create simple quantum circuits.
+
+==== Comments
+
+Before we start, we'll learn how to annotate the code we're writing.
+
+You can use comments as messages to other humans reading your code (including your future self). Two slashes (+//+) will mark the rest of the line as a comment. You can also use the character sequences +/\*+ and +*/+ to mark the start and end of comments, respectively, over many lines. We'll use comments to describe the code examples in this chapter:
+
+[source,c]
+----
+The compiler will read this // but not this
+/* or any
+of this */
+----
+
+==== Version Strings
+
+At the time of writing, there are three versions of QASM, so you might want to specify which version of QASM you're writing in. For this reason, the first noncomment line of a QASM file can be a _version string_ (an example follows). In this chapter, all code will be in QASM 3.0, so will mostly ignore version strings. The version string starts with +OPENQASM+, followed by a space, the major version, a period, the minor version, and a semicolon. Here is the version string for OpenQASM 3.0, which we use in this chapter:
+
+[source,c]
+----
+OPENQASM 3.0;
+----
+
+
+==== Basic Syntax
+
+QASM is a rich language that can describe complex quantum programs, including classical and quantum routines. In this section, we'll ignore most of these features and worry only about creating individual quantum circuits. We'll see how to create more sophisticated programs later on in this chapter.
+
+The quantum systems targeted by QASM can have any number of qubits and may support any kind of quantum gates. In this subsection, we'll imagine a system with three qubits that supports CX gates and U gates. To start, let's look at the QASM code that describes the "hello, world!" of quantum circuits: a circuit that creates a GHZ state, in which our qubits are in an equal superposition of latexmath:[$|000\rangle$] and latexmath:[$|111\rangle$]. We'll also add some measurements so our experimentalists can verify this. <<ghz_circuit>> shows the circuit we'll create.
+
+[[ghz_circuit]]
+.A simple quantum circuit
+image::images/qkpg_1001.png[""]
+
+The following QASM code produces the circuit shown in [.keep-together]#<<ghz_circuit>>:#
+
+[source,c]
+----
+// Declare data
+// type[number] name;
+qubit[3] qr;
+bit[3] cr;
+
+// Initialize qubits to |0>
+reset qr[0];
+reset qr[1];
+reset qr[2];
+
+// Specify quantum gates
+h qr[0];
+CX qr[0], qr[1];
+CX qr[0], qr[2];
+
+// Measure to classical bits
+cr[0] = measure qr[0];
+cr[1] = measure qr[1];
+cr[2] = measure qr[2];
+----
+
+We've split this code into four sections:
+
+1. First, we declare and name the data (both quantum and classical) that we'll be manipulating. A declaration starts with the type, followed by the name, and ends with a semicolon. The two data types we use here are +bit+ and +qubit+, two things you should already be familiar with. Like many other programming languages, the square bracket notation allows us to declare an array of a type. In the first noncode line, we're declaring that we'll manipulate three qubits, and in the next two we name the data. We called our array of qubits +qr+ and our array of bits +cr+. Finally, we end the line with a semicolon.
+
+2. Next, we initialize each qubit to the state latexmath:[$|0\rangle$] using the +reset+ instruction. Here, we're using the square bracket notation to access the individual elements of the +qr+ array.
+
+3. We now tell the quantum computer how to manipulate our qubits. As with classical assembly languages, we first specify the operation, then the data we want to apply the operation to. For example, +h qr[0];+ tells the quantum computer to perform an H gate on the first qubit in the array +qr+. We end these lines with a semicolon.
+
+4. Finally, we need to measure our qubits to see the results. The quantum gates we applied before had no "output"; they just changed the state of the qubits. But the +measure+ operation _does_ return something (a +bit+), and we can assign its outputs to our classical bits.
+
+==== Implicit Looping
+
+When programming, we often find ourselves repeating the same operation on many items. QASM supports syntax to simplify this; if we apply an operation to an array, the compiler will try to repeat this operation on each item in that array. For example, this snippet:
+
+[source,c]
+----
+qubit[3] qr;
+h qr;
+----
+
+declares a three-qubit array named +qr+, and applies an H gate to each qubit in +qr+. This is shorthand for the following:
+
+[source,c]
+----
+qubit[3] qr;
+h qr[0];
+h qr[1];
+h qr[2];
+----
+
+This behavior is the same for all operations that act on a single type. For operations that take two inputs, the operation will try to iterate through any arrays in unison. For example, in the following code, we iterate through two arrays of qubits (named +control+ and +target+):
+
+
+[source,c]
+----
+qubit[3] control;
+qubit[3] target;
+
+CX control, target;
+----
+
+This produces the circuit shown in <<controlled_registers>> and is equivalent to the following code:
+
+[source,c]
+----
+qubit[3] control;
+qubit[3] target;
+
+CX control[0], target[0];
+CX control[1], target[1];
+CX control[2], target[2];
+----
+
+
+[[controlled_registers]]
+.A two-register circuit where each qubit in one register is controlled by each qubit in the other
+image::images/qkpg_1002.png[""]
+
+This behavior makes sense only if the two arrays are the same size, so if we apply a multi-input operation on two arrays of different sizes, the compiler will raise an error. If any of the inputs are not arrays, then the compiler will not attempt to iterate through those inputs and will use the same input for each operation in the loop.
+
+For example, in the following code, +qr[0]+ refers to a single +qubit+ (not an array), but +qr[1:2]+ does refer to an array (containing qubits +qr[1]+ and +qr[2]+):
+
+[source,c]
+----
+qubit[3] qr;
+CX qr[0], qr[1:2];
+----
+
+The compiler will repeat the operation for each item in +qr[1:2]+, with the control qubit +qr[0]+. <<GHZ_gates>> shows the circuit described by the preceding code.
+
+[[GHZ_gates]]
+.The quantum gates in the GHZ circuit
+image::images/qkpg_1003.png[""]
+
+With this new syntax, we can create the GHZ circuit we saw in the previous section with the shorter, more readable, and more flexible code:
+
+
+[source,c]
+----
+// Declare data
+qubit[3] qr;
+bit[3] cr;
+
+// Initialize qubits to |0>
+reset qr;
+
+// Specify quantum gates
+h qr[0];
+CX qr[0], qr[1:2];
+
+// Measure to classical bits
+cr = measure qr;
+----
+
+<<GHZ_circuit>> shows the circuit produced by this code.
+
+[[GHZ_circuit]]
+.A simple quantum circuit
+image::images/qkpg_1001.png[""]
+
+==== Quantum Gates and Instructions
+
+In this section, we'll see how to describe some basic quantum operations through QASM.
+
+===== Gates
+
+QASM understands two quantum gates out of the box: the single-qubit U gate and the two-qubit CNOT. Together, these two gates are universal, meaning we can build any quantum gate from a combination of these two gates.
+
+The U gate is the most general single-qubit gate. It's a parameterized gate, and we specify the parameters using rounded brackets after the instruction. For example, the following code applies a U gate to the third qubit of the quantum register +qr+:
+
+[source,c]
+----
+U(0, 0, pi) qr[3];
+----
+
+The definition of the U gate from the OpenQASM specification is the same as the U gate implemented in Qiskit:
+
+[latexmath]
+++++
+\(
+$U(\theta,\phi,\lambda) := \begin{pmatrix}\cos(\theta/2) & -e^{i\lambda}\sin(\theta/2) \\ e^{i\phi}\sin(\theta/2) & e^{i(\phi+\lambda)}\cos(\theta/2) \end{pmatrix}$]
+\)
+++++
+
+This definition has three parameters, theta (latexmath:[$\theta$]), phi (latexmath:[$\phi$]), and lambda (latexmath:[$\lambda$]), and as such, the +U+ command requires these three parameters; i.e., +U(theta, phi, lambda)+.
+
+The other built-in gate is CNOT, which has the command +CX+. 
+
+===== Instructions
+
+QASM also supports two built-in, nonunitary quantum instructions. The first is +reset+, which resets a qubit to latexmath:[$|0\rangle$]:
+
+[source,c]
+----
+qubit[4] qr;
+reset qr;  // Set all qubits in qr to |0>
+----
+
+The second is +measure+, which measures the state of a qubit in the computational basis (a.k.a. the Z-basis) and writes the result to an output bit. These measurements project the state of a qubit to either latexmath:[$|0\rangle$] or latexmath:[$|1\rangle$], and we can immediately start manipulating this qubit after measurement:
+
+[source,c]
+----
+bit[3] cr;
+qubit[3] qr;
+reset qr;
+
+cr = measure qr;
+----
+
+=== Building Higher-Level Gates
+
+In the previous section, we saw the QASM's basic syntax and built-in operations. In this section, we'll look at how we can build custom operations from these built-in commands.
+
+==== Modifying Existing Gates
+
+One of the ways we can describe more complicated quantum gates is through _gate modifiers_. Wherever we use a quantum gate, we can prefix that gate with a modifier keyword and the +'@'+ character to change that gate's behavior.
+
+For example, the +ctrl+ modifier controls a gate on the state of another qubit (active only if the controlling qubit is latexmath:[$|1\rangle$]). For example, since +U(0, 0, pi)+ is the Pauli Z gate, the following code performs the controlled-Z gate on the first two qubits of +qr+:
+
+[source,c]
+----
+// Controlled-Z gate
+ctrl @ U(0, 0, pi) qr[0], qr[1];
+----
+
+<<controlled_u>> shows the circuit described by the preceding code.
+
+[[controlled_u]]
+.A controlled-U gate
+image::images/qkpg_1005.png[""]
+
+Similarly, the +negctrl+ modifier conditions the gate on the state of the control qubit being latexmath:[$|0\rangle$].
+
+The +inv+ modifier _inverts_ a gate. For example, in the next code snippet, we apply a T gate to the qubit +q+, followed by the inverse of the T gate (i.e., the latexmath:[$\text{T}^\dagger$] gate). This sequence of gates is equivalent to doing nothing (the identity operation):
+
+[source,c]
+----
+U(0, 0, pi/4) qr;  // T gate
+inv @ U(0, 0, pi/4) qr;  // T† gate
+----
+
+<<inv_u>> shows the circuit described by the preceding code.
+
+[[inv_u]]
+.A U gate, followed by its inverse
+image::images/qkpg_1006.png[""]
+
+Finally, the +pow(n)+ modifier repeats the gate +n+ times:
+
+[source,c]
+----
+pow(3) @ U(0, 0, pi/4) qr;
+----
+
+<<pow_u>> shows the circuit described by this code.
+
+[[pow_u]]
+.A U gate repeated twice
+image::images/qkpg_1007.png[""]
+
+We can also stack these modifiers as in the following:
+
+[source,c]
+----
+inv @ pow(3) @ U(0, 0, pi/4) qr;
+----
+
+<<inv_pow_u>> shows the circuit described by this code.
+
+[[inv_pow_u]]
+.A U(0, 0, pi/4) gate, inverted and repeated twice
+image::images/qkpg_1008.png[""]
+
+
+==== Defining New Gates
+
+To declare a new quantum gate, we use the +gate+ keyword, followed by:
+
+1. The name of the new gate
+2. Any parameters the gate takes (in parentheses)
+3. Names of qubits the gate acts on
+4. The gate's definition in terms of other operations (inside curly brackets)
+
+For example, this defines a controlled-RZ gate:
+
+[source,c]
+----
+// Call gate 'crz'
+// Gate takes one parameter (phi)
+// Gate acts on two qubits (q0 & q1)
+gate crz(phi) q0, q1 {
+    ctrl @ U(0, 0, phi) q0, q1;
+}
+----
+
+The following code shows this gate definition in action; once we've defined a new gate type, we can use it just like any other gate:
+
+[source,c]
+----
+// Define controlled-RZ gate
+gate crz(phi) q0, q1 {
+    ctrl @ U(0, 0, phi) q0, q1;
+}
+
+// Declare circuit data types
+qubit[2] qr;
+bit[2] cr;
+
+// Construct simple circuit
+reset qr;
+crz(pi/4) qr[0], qr[1];
+cr = measure qr;
+----
+
+This code describes the quantum circuit shown in <<cu_full_circuit_example>>.
+
+[[cu_full_circuit_example]]
+.A circuit containing resets, a controlled-U operation, and measurements.
+image::images/qkpg_1009.png[""]
+
+
+=== Classical Types and Instructions
+
+In the previous sections, we used two of the data types that QASM supports. The first is the +qubit+, the smallest unit of quantum information, and the other is the +bit+, the smallest unit of classical information. We also saw that we could declare and operate on _arrays_ of those types using the square bracket syntax:
+
+[source,c]
+----
+bit b0;      // Declare a bit named 'b0'
+qubit q0;    // Declare a qubit named 'q0'
+bit[2] cr;   // Array of 2 bits named 'cr'
+qubit[3] qr; // Array of 3 qubits named 'qr'
+----
+
+Due to the limited nature of near-term devices, the only quantum data type QASM supports is the +qubit+. However, quantum circuits are controlled by classical routines, and QASM does support many different classical types to make this easier. All classical types in QASM are arrays of +bits+, but it's much easier to abstract this out a level to types we're more familiar with in higher-level languages.
+
+The syntax is the same as with declaring arrays (i.e., +type[size] name+). For example, this declares an integer (more on this to come) with 16 bits, named +my_int+:
+
+[source,c]
+----
+int[16] my_int;
+----
+
+<<classical_types_table>> lists some classical data types available in QASM 3.0.
+
+[[classical_types_table]]
+.Classical data types supported by QASM
+[options="header"]
+|=======
+|Type        |Description
+|+bit+ |We've already seen this type. This is the smallest unit of classical information and can have values of either +0+ or +1+. All other classical types are built from +bits+.
+|+int+ |This data type represents a signed integer (i.e., an integer that can be negative). One of the bits stores the sign (+++ or +-+), and the rest store the integer in binary notation. This means +n+ bits can store integers between latexmath:[$-2^{n-1}$] and latexmath:[$2^{n-1}$].
+|+uint+ |This data type represents _unsigned_ (positive) integers. +n+ bits can store integers between 0 and latexmath:[$2^n$].
+|+float+ |This data type uses the IEEE 754 specification to represent floating-point numbers. 
+|+angle+ |You're less likely to have seen this as a built-in data type in other low-level languages, but due to the rotational nature of quantum gates, QASM allows us to specify an _angle_ as a fraction of a full rotation. +n+ bits allows us to specify angles between 0 and latexmath:[$2\pi$] within an error of latexmath:[$\pm \ 2\pi/2^n$]. Casting a different value to an +angle+ takes the remainder of that value after dividing by latexmath:[$2\pi$].
+|+complex+ |This data type represents a complex number. We can build this type from either two +ints+ or two +floats+ of equal size, depending on the precision you want. This means we pass either an +int+ or a +float+ as the size (e.g., +complex[int[32]] name;+). The keyword +im+ represents the complex unit latexmath:[$i = \sqrt{-1}$].
+|+bool+ |Like the +bit+, this type can take one of two values, in this case +true+ or +false+.
+|=======
+
+==== Constants
+
+We can declare constant (immutable) classical types using the +const+ keyword:
+
+[source,c]
+----
+const uint[16] x = 44;
+----
+
+==== Shorthands
+
+Some shorthands are useful when declaring classical types:
+
+* When declaring an array of bits, we can use a string of +0+ and +1+ characters (e.g., +bit[10] my_bits = \'0011111011';+).
+* We can use scientific notation to declare large or small numbers (e.g., +float[32] name = 2.34e5;+).
+* QASM supports some popular mathematical constants that we can use to declare types, including the following:
+** When declaring +ints+ and +floats+, we can use the keywords +pi+, +tau+, and +euler+ (e.g., +float[32] name = 4*euler;+).
+** When declaring a +complex+ type, we can use the +im+ keyword to represent the imaginary unit (e.g., +complex[float[32]] my_complex = 3.1 + 1.2im;+).
+
+==== Arrays of Classical Types
+
+We've already seen how to create arrays of +bits+ and +qubits+ with the square bracket syntax:
+
+[source,c]
+----
+qubit[3] qr;  // Array of 3 qubits
+bit[3] cr;    // Array of 3 bits
+----
+
+But we can also create arrays of the higher-level classical types through the +array+ keyword. This keyword should be followed by the type and the size of the array in square brackets. For example, the following code creates an array of 10 16-bit +ints+, named +int_array+:
+
+[source,c]
+----
+array[int[16], 10] int_array;
+----
+
+And we can access each element of +int_array+ using square +brackets+ as we did with +bit+ and +qubit+ arrays. We can also specify all the values of an array when declaring it using curly brackets:
+
+[source,c]
+----
+array[float[64], 3] my_array = {0.1, 2.9, pi};
+----
+
+QASM also support multidimensional arrays; we just need to pass the extra dimension to the array constructor. In the code that follows, we create a 2D array of 32-bit +units+, named +matrix+:
+
+[source,c]
+----
+// 8x8, 2D array
+array[uint[32], 8, 8] matrix;
+----
+
+==== Built-in Classical Instructions
+
+QASM supports some common operations between classical data of the same type. All instructions shown here must have a data type on the left-hand side (LHS) of the instruction and a value of the same type on the right-hand side (RHS). For example, the assignment operator (+=+) sets the value of the data on the LHS to the value on the RHS:
+
+[source,c]
+----
+bit x;  // Declare bit
+x = 1;  // Set x to 1
+----
+
+All data types except +complex+ support the comparison operators shown in <<classical_comparisons_table>>.
+
+[[classical_comparisons_table]]
+.Classical comparisons supported by QASM
+[options="header"]
+|=======
+|Name |Symbol |Description
+|Equal to | +==+ | Compares the value on the RHS to the value on the LHS and returns +True+ if, and only if, both sides are equal
+|Not equal to | +!=+ | Returns +False+ if, and only if, both sides are equal
+|Less than | +<+ | Returns +True+ if LHS is less than RHS
+|Greater than | +>+ | Returns +True+ if LHS is greater than RHS
+|Less than or equal to | +\<=+ | Returns +True+ if LHS is less than or equal to RHS
+|Greater than or equal to | +>=+ | Returns +True+ if LHS is greater than or equal to RHS
+|=======
+
+All numeric types (+int+, +float+, +angle+, and +complex+) support the basic arithmetic operations in <<classical_numeric_instructions_table>>.
+
+[[classical_numeric_instructions_table]]
+.Classical numeric instructions supported by QASM
+[options="header"]
+|=======
+|Name |Symbol |Description
+|Addition | +++ | Returns value of LHS added to RHS
+|Multiplication | +*+ | Returns value of LHS multiplied by RHS
+|Power | +**+ | Returns value of LHS to the power (exponent) of RHS
+|Division | +/+ | Returns value of LHS divided by RHS (note that dividing two +ints+ returns an +int+)
+|=======
+
+Along with the operations in <<classical_numeric_instructions_table>>, integers (+int+) also support the modulo operation shown in <<classical_integer_instructions_table>>.
+
+[[classical_integer_instructions_table]]
+.Classical integer instructions supported by QASM
+[options="header"]
+|=======
+|Name |Symbol |Description
+|Modulo | +%+ | Returns the value of LHS modulo RHS (i.e., the remainder of LHS divided by RHS)
+|=======
+
+As with most programming languages, we can also condition operations on the state of a +bool+ and the +if+ keyword. The +if+ keyword must be followed by the +bool+ (in parentheses), then by the conditioned logic (in curly brackets). We can then follow this with the +else+ keyword to trigger instructions only if the statement was +false+. For example, this code calculates the maximum value of +a+ and +b+ and stores it in +c+:
+
+[source,c]
+----
+if (a < b) {
+    c = b;
+} else {
+    c = a;
+};
+----
+
+With this classical logic, we can now encode more complicated quantum circuits, such as the famous quantum teleportation circuit shown in <<teleportation_circuit>>.
+
+[[teleportation_circuit]]
+.The quantum teleportation protocol
+image::images/qkpg_1010.png[""]
+
+The following QASM code encodes the preceding teleportation protocol shown:
+
+[source,c]
+----
+// Declare two bits to be transmitted
+bit cz;
+bit cx;
+
+// Declare message and entangled pair
+qubit message;
+qubit[2] pair;
+
+// Third party entangles pair
+h pair[0];
+cx pair[0], pair[1];
+
+// Third party gives pair[0] to message sender
+// and pair[1] to message recipient
+
+// Message sender then entangles pair[0] with
+// the message qubit, and measures
+cx message, pair[0];
+h message;
+cz = measure message;
+cx = measure pair[0];
+
+// Message sender sends two classical bits to
+// message recipient
+if (cx == 1) {
+    x pair[1];
+}
+
+if (cz == 1) {
+    z pair[1];
+}
+----
+
+QASM supports +while+ loops, which repeat instructions as long as a condition is +true+. For example, the following snippet implements an inefficient way of resetting a qubit (+q+) to latexmath:[$|0\rangle$]:
+
+[source,c]
+----
+qubit q;
+bit b = 1;
+
+while (b==1) {
+    h q;
+    b = measure q;
+}
+----
+
+QASM also support +for+ loops, which repeat instructions for each item in an array. For example, this code block applies an H gate to each qubit in +qr+:
+
+[source,c]
+----
+qubit[3] qr;
+
+for q in qr {
+    h q;
+}
+----
+
+=== Building Quantum Programs
+
+We have now covered everything needed to create rich, circuit-level quantum programs in QASM. In this section, we'll look at two QASM features that make managing and reusing programs easier.
+
+==== Subroutines
+
+Similar to custom gate definitions, we can combine both classical and quantum instructions into a _subroutine_. A subroutine definition starts with the +def+ keyword, followed by the name of the subroutine. Next, we declare and name the data types the subroutine will act on (in parentheses), then indicate the data type that the subroutine returns (after a +\->+ symbol). The subroutine instructions follow, enclosed by curly brackets.
+
+To illustrate, the following code creates a subroutine named +bell_measurement+ that measures two qubits in the Bell basis. This subroutine takes an array of two +qubits+ and returns two +bits+:
+
+[source,c]
+----
+def bell_measure(qubit[2] qr) -> bit[2] {
+    CX qr[0], qr[1];
+    h qr[0];
+    return measure qr;
+}
+----
+
+To use this subroutine in a program, we follow the subroutine's name with the arguments, enclosed in parentheses:
+
+[source,c]
+----
+qubit[2] qr;
+bit[2] cr;
+
+cr = bell_measure(qr);
+----
+
+Note that you can declare classical data types in the body of a subroutine but not quantum data types.
+
+==== Inputs and Outputs
+
+We've seen that instructions and subroutines can accept inputs and return outputs, and this is also true of entire QASM programs; when we declare classical data, we can prefix the declaration with the +input+ keyword, which means the value of that data will only be known at runtime. In the following code, we declare an array of 20 +angles+ named +point+, and tell QASM that this value will be known only at runtime:
+
+[source,c]
+----
+input angle[20] point;
+----
+
+By leaving some values unknown when compiling, we can avoid repeating long compilation and optimization processes. This is especially useful for near-term, variational algorithms that require many circuit runs with different gate parameters.
+
+We can also specify any classical data types that our program should output using the +output+ keyword. If we don't specify any outputs, then the QASM program will output _all_ classical data.

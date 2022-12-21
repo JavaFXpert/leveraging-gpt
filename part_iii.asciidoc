@@ -1,0 +1,16 @@
+[[part_iii]]
+[part]
+
+== Additional Essential Functionality
+++++
+<blockquote data-type="epigraph">
+<p>You know the Wolfman's just about the number one cat alive</p>
+<p data-type="attribution">Todd Rundgren</p>
+</blockquote>
+++++
+[partintro]
+--
+In <<part_i>> we discussed fundamentals of quantum computing with Qiskit, and in <<part_ii>> we demonstrated features of Qiskit that leverage the power of quantum information. Here in <<part_iii>>, we'll discuss various modules and features of Qiskit that are also essential for quantum application developers. First, pass:[<a data-type="xref" data-xrefstyle="chap-num-title" href="#qiskit_circuit_library_chap">#qiskit_circuit_library_chap</a>] serves as a reference for gates and instructions introduced in <<part_i>>.
+
+pass:[<a data-type="xref" data-xrefstyle="chap-num-title" href="#backends_chapter">#backends_chapter</a>] demonstrates features of Qiskit that abstract and facilitate working with various quantum computers and simulators. Finally, we'll explore the quantum assembly language QASM 3.0 in pass:[<a data-type="xref" data-xrefstyle="chap-num-title" href="#unique_chapter_id">#unique_chapter_id</a>].
+--

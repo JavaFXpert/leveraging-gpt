@@ -1,0 +1,691 @@
+[[algorithms_chap]]
+== Quantum Algorithms
+
+Much like many sophisticated classical algorithms, in the future, we'd like to be able to run a quantum algorithm without knowing all the details about its implementation. Qiskit supports many popular quantum algorithms out of the box. You can simply specify a problem, then choose an algorithm to solve it. In this chapter, we'll explore Qiskit's algorithms module and the algorithms this module supports.
+
+=== Background on Quantum Algorithms
+
+Quantum algorithms are the motivation for most research and investment in quantum computing. The entire fields of quantum error correction, quantum hardware, and quantum software development (including Qiskit) ultimately work toward the common goal of running a useful algorithm on a quantum computer.
+
+With this in mind, you might find it surprising that there are relatively few problems for which we think we could achieve _quantum advantage_ (where a quantum computer outperforms modern classical computers). Finding new quantum algorithms and new ways to apply known algorithms is a very active area of research. Maybe even more surprising is that, of these candidate quantum algorithms, we're not actually sure some will have a speedup at all (never mind on huge, fault-tolerant computers). But why is this?
+
+To guarantee a speedup over classical methods, we need to be able to directly compare the quantum algorithm to its classical counterpart, and to make a direct comparison, both algorithms must solve exactly the same problem. One consequence of this is that both algorithms must take classical data as an input and return classical data as an output. Some famous algorithms (e.g., Harrow, Hassidim, and Lloyd's algorithm, known as the _HHL algorithm_) take/return quantum superpositions as inputs and/or outputs and thus can't be directly compared to classical algorithms.
+
+While algorithms with quantum input and outputs are still interesting in their own right, we can view them as building blocks, used as subroutines in other algorithms that _do_ use classical inputs and outputs. Examples include Brassard, Høyer, and Tapp's quantum counting algorithm, which uses phase estimation as a subroutine, and Kerenidis and Prakash's recommendation algorithm, which they based on the HHL algorithm (more on this later).
+
+If the quantum algorithm solves a classical problem, you can start to analyze how it behaves, and use this to compare it to the best-known classical algorithm. For example, we know Shor's algorithm grows significantly slower than its best-known classical competitor, the general number field sieve, and this result is the reassurance many people needed to invest time and money into building quantum computers.
+
+So far, we have been talking about comparisons to the "best-known" classical algorithms. The final step in proving that our quantum computer will _definitely_ outperform a classical computer is to prove that no classical algorithm could possibly scale better than our quantum algorithm. As you might imagine, this is difficult to do.
+
+Sometimes, the fact that many people have tried and failed to find an efficient classical algorithm counts as enough evidence that the quantum competitor is worth investing in, but the future sometimes surprises us. Previously, we mentioned Kerenidis and Prakash's recommendation algorithm, which was exponentially faster than the best-known classical algorithm for the same problem. Only three years later, Ewin Tang found a classical algorithm that was only polynomially slower than the quantum algorithm.
+
+At the time of writing, we can already run simple quantum algorithms on real quantum hardware, and we are rapidly approaching the ability to test quantum algorithms empirically, instead of measuring their performance theoretically. As with classical computing, we will need to consider implementation details (not just the algorithm complexity) to ensure we get the best performance.
+
+=== Using the Algorithms Module
+
+All algorithm interfaces in Qiskit's algorithms module follow a consistent pattern. In this section, we'll learn about this general pattern and the rationale behind it.
+
+==== Quickstart
+
+First, let's see how we run a simple algorithm using Qiskit.
+
+The code in the following snippet uses Qiskit's algorithms module to run Shor's algorithm on a simulator:
+
+[source,python]
+----
+# Choose a backend to use
+from qiskit.providers.aer import AerSimulator
+aer_sim = AerSimulator()
+
+# Create an instance of Shor's algorithm, using
+# our backend
+from qiskit.algorithms import Shor
+shor = Shor(aer_sim)
+
+# Execute algorithm on specific problem and
+# view the result
+result = shor.factor(21)
+result.factors  # Has value: [[3, 7]]
+----
+
+We've split the preceding code snippet into three steps:
+
+1. First, we need to choose a backend to run the algorithm on. Here, we've chosen the +AerSimulator+.
+2. Next, we create an instance of Shor's algorithm, using the backend.
+3. We then run Shor's algorithm on the input +21+ and view the results.
+
+We can see that the +factors+ attribute of +result+ does contain the correct factors of 21.
+
+==== The Algorithms Interface
+
+When testing and researching different quantum algorithms, we want to be able to compare the performance of different algorithms (and variations on these algorithms) against the same problem.
+
+The input to a factoring problem is always an integer, so Qiskit uses a Python +int+ to represent a factoring problem. Other algorithms (e.g., amplitude amplification and amplitude estimation) have their own problem classes (e.g., +AmplificationProblem+ and +EstimationProblem+) that the algorithms will try to solve.
+
+We can then compare the performance of different algorithms on these problem objects. For example, if we create an +EstimationProblem+ object, Qiskit offers four different quantum algorithms to solve it: 
+
+* +AmplitudeEstimation+
+* +FasterAmplitudeEstimation+
+* +IterativeAmplitudeEstimation+
+* +MaximumLikelihoodAmplitudeEstimation+
+
+For other problems, Qiskit even incorporates some classical algorithms, such as +NumPyEigensolver+, +NumPyLinearSolver+, and +NumPyMinimumEigensolver+, so we can compare their results and performance.
+
+If we view a quantum algorithm as a method of solving real-world problems, then we must also consider implementation details (e.g., the backend it runs on) as part of that method. When we construct the algorithm, we can specify the backend, as well as other device-specific implementation details, such as the transpiler +optimization_level+. These properties live inside a +QuantumInstance+ object. For example, let's say we're using the default +AerSimulator+, which has no errors. This means we don't need to bother optimizing the circuits when we transpile them. In the following code snippet, we create a +QuantumInstance+ with the +optimization_level+ set to +0+:
+
+[source,python]
+----
+# Choose a backend to use
+from qiskit.providers.aer import AerSimulator
+aer_sim = AerSimulator()
+
+# Construct the QuantumInstance with no
+# optimization
+from qiskit.utils import QuantumInstance
+quantum_instance = QuantumInstance(
+    aer_sim,
+    optimization_level=0,
+)
+----
+
+We can then use the following code snippet to construct and run Shor's algorithm using our +QuantumInstance+ instead of a backend object:
+
+[source,python]
+----
+from qiskit.algorithms import Shor
+shor = Shor(quantum_instance)
+result = shor.factor(15)
+result.factors  # Has value: [[3, 5]]
+----
+
+As well as backend-specific parameters, we can also change algorithm-specific parameters. For example, the algorithm class +FasterAmplitudeEstimation+ needs two parameters, one to specify the acceptable error and another to specify the maximum number of iterations allowed.
+
+
+=== Traditional Quantum Algorithms
+
+In this section, we'll cover the more traditional quantum algorithms in Qiskit's algorithms module and give a short example of each algorithm in action.
+
+==== Grover's Algorithm
+
+Grover's algorithm is one of the most famous quantum algorithms. Grover's is one of the few quantum algorithms that we can prove scales better than any possible classical algorithm, and it's actually provably optimal for quantum algorithms too. <<grover_high_level>> shows a high-level Grover circuit.
+
+[[grover_high_level]]
+.High-level example of Grover's algorithm, where "Q" is the Grover operator (discussed later in this section)
+image::images/qkpg_0701.png[""]
+
+Grover's algorithm solves a specific case of the _amplification problem_: given two operators, latexmath:[$A_\theta$] and latexmath:[$B_\theta$], that rotate around the states latexmath:[$|A\rangle$] and latexmath:[$|B\rangle$], create a circuit that transforms latexmath:[$|A\rangle$] into latexmath:[$|B\rangle$]. Grover's specific case is where latexmath:[$|A\rangle$] is the superposition of all computational basis states and latexmath:[$|B\rangle$] is a specific computational basis state. 
+
+If we know how to create a program to check a solution to a problem, it's relatively straightforward to create a circuit that transforms around that solution's computational basis state (i.e., it's straightforward to create latexmath:[$B_\theta$]). This makes Grover's algorithm very widely applicable.
+
+To use Grover's algorithm, we first need to specify the problem, which we do via the +AmplificationProblem+ class. The +AmplificationProblem+ constructor requires two arguments: the +oracle+, which is the +QuantumCircuit+ that carries out the operator latexmath:[$B_\theta$], and the +is_good_state+ function, which takes a bit string and returns +True+ if it's a solution.
+
+In the following code snippet, we use the +PhaseOracle+ class from Qiskit's circuit library to create an oracle from a simple Boolean expression.
+
+Let's imagine that two parents, A and B, and their child, C, have two tickets for a play. Each person can either (0) not go to the play or (1) go to the play. At least one adult needs to go, so we have the requirement +(A | B)+, where +|+ is a Boolean +OR+. The other problem is that there are only two tickets, so we can't have all three going together. In our notation, this is +\~(A & B & C)+, where +~+ is the Boolean +NOT+ and +&+ is the Boolean +AND+. Finally, C particularly wants to go with B as C doesn't see B much during the week, so we have the added constraint of +(B & C)+. Can we satisfy all these constraints?
+
+You may have already worked out that the answer is 'yes' and that this problem only has one solution: C and B go, and A doesn't. If we convert this to bits, the solution is the string +110+, where A is the least significant bit:
+
+[source,python]
+----
+# Create an oracle using a Boolean expression
+from qiskit.circuit.library import PhaseOracle
+oracle = PhaseOracle(
+        '(A | B)'    # A must go if B doesn't
+        '& ~(A & B & C)'  # Can't all go
+        '& (B & C)'  # C wants to go with B
+	)
+----
+
+<<grover_oracle>> shows the result of +oracle.draw()+. The PhaseOracle constructor has compiled this to a simple diagonal gate that adds a phase of -1 to the state 110. More difficult problems can still be compiled to oracles in polynomial time but won’t be as easy to solve by inspection.
+
+[[grover_oracle]]
+.Qiskit-generated Grover oracle for the preceding example problem
+image::images/qkpg_0702.png[""]
+
+In the following code snippet, we create an +AmplificationProblem+ from our +PhaseOracle+. Conveniently, the +PhaseOracle+ class has an +evaluate_bitstring+ method, which +AmplificationProblem+ knows to use as the +is_good_state+ parameter, so we don't need to specify that:
+
+[source,python]
+----
+from qiskit.algorithms import AmplificationProblem
+problem = AmplificationProblem(oracle)
+----
+
+By default, the +AmplificationProblem+ class defaults to a Grover's specific case, but we can set parameters to program other cases:
+
+* The +state_preparation+ argument takes a quantum circuit that prepares the state latexmath:[$|A\rangle$]. If not specified, this defaults to an H gate on each qubit.
+* The +grover_operator+ argument takes the circuit that performs latexmath:[$A_\theta B_\theta$]. If not specified, Qiskit constructs this from the oracle and +state_preparation+ circuit.
+* The +post_processing+ argument takes a callable Python function that Qiskit will apply to the top measured bit string before writing to the assignment (note this function is not called before passing bit strings to +is_good_state+).
+* The +objective_qubits+ argument takes a list of integers, which specifies the indexes of the qubits that contain the solution bit string. This is useful if your oracle uses auxiliary qubits that the diffuser and measurements should ignore.
+
+Now that we have our family dynamic problem encoded properly, we can then use Grover's algorithm to solve it. As with all algorithms, we first need to choose the backend to use. In the following code snippet, we use the +AerSimulator+. Once we've constructed the +Grover+ object, we can use it to solve the +AmplificationProblem+ using the +amplify()+ method, which returns a +GroverResult+ object. From this +GroverResult+ object, we can get the output bit string (plus any postprocessing) via the +assignment+ attribute.
+
+Note that since we're happy with the default settings, we can skip creating a +QuantumInstance+ and pass our backend straight to +Grover+, which will create this for us:
+
+[source,python]
+----
+# Choose backend to use
+from qiskit.providers.aer import AerSimulator
+aer_sim = AerSimulator()
+
+# Use Grover's algorithm to solve the oracle
+from qiskit.algorithms import Grover
+grover = Grover(quantum_instance=aer_sim)
+result = grover.amplify(problem)
+result.assignment  # Has value '110'
+----
+
+In the preceding code snippet, the algorithm decided the most likely solution was +110+, as we expected. Depending on the backend used, we can also access other data such as the following:
+
++circuit_results+:: 
+The raw, unprocessed results of the circuit execution (can be a +Counts+ dictionary or +Statevector+).
+
++top_measurement+::
+The most frequently measured bit string.
+
++max_probability+:: 
+The probability of measuring the most probable bit string.
+
++iterations+:: 
+Since we might not know how many solutions there are beforehand, the algorithm tries out different powers of Grover iterations, checking the results using the +is_good_state+ function. This value is a list of all the powers tried.
+
+<<grover_operator>> shows the Grover operator that Qiskit generates from +oracle+. You can access this via +problem.grover_operator+.
+
+[[grover_operator]]
+.Qiskit-generated Grover operator
+image::images/qkpg_0703.png[""]
+
+==== Phase Estimation Algorithms
+
+Say we have a unitary circuit, latexmath:[$Q$], and a quantum state, latexmath:[$|\psi\rangle$]. We're guaranteed that latexmath:[$|\psi\rangle$] is an eigenstate of latexmath:[$Q$], i.e.:
+
+latexmath:[$Q|\psi\rangle = e^{2 \pi i \theta}|\psi\rangle$]
+
+The phase estimation problem is to work out the value of latexmath:[$\theta$].
+
+Qiskit provides three different phase estimation algorithms: [.keep-together]#+PhaseEstimation+#, +HamiltonianPhaseEstimation+, and +IterativePhaseEstimation+.
+
++PhaseEstimation+ is the classic textbook phase estimation algorithm. It uses two registers, one for the state latexmath:[$|\psi\rangle$] and another "evaluation" register to record the phase latexmath:[$Q$] introduces. The more evaluation qubits, the higher the precision of the output (and the longer the circuit). The algorithm then uses the inverse quantum Fourier transform to read the evaluation register in the computational basis. <<phase_estimation>> shows an example of this algorithm estimating the phase the T gate introduces to the state latexmath:[$|1\rangle$].
+
+[[phase_estimation]]
+.A simple phase estimation circuit that estimates the phase the T gate introduces onto the state 1
+image::images/qkpg_0704.png[""]
+
+Each of Qiskit's phase estimation algorithms has an +estimate()+ method, which takes a unitary circuit (or other operator) and a circuit that prepares an initial state. The following code shows a simple example for the T gate and the state latexmath:[$|1\rangle$]:
+
+[source,python]
+----
+from qiskit.algorithms import PhaseEstimation
+from qiskit.test.mock import FakeSantiago
+from qiskit import QuantumCircuit
+santiago = FakeSantiago()
+
+# We will first define the problem:
+# Our unitary (Q) will be the T gate
+unitary = QuantumCircuit(1)
+unitary.t(0)
+
+# Our state (|psi>) will be |1>
+state_prep = QuantumCircuit(1)
+state_prep.x(0)
+
+# Construct our algorithm instance. We will use
+# a simulated Santiago device, and three 
+# evaluation qubits
+phase_estimator = PhaseEstimation(3, santiago)
+
+# Next, run this algorithm on our input problem
+result = phase_estimator.estimate(unitary,
+                                  state_prep)
+
+# Finally, access the result
+result.phase  # Has value: 0.125
+----
+
+The +estimate()+ method returns a +PhaseEstimationResult+ object, which uses the circuit measurements to guess the most likely phase and returns a +float+. As with the other algorithms' +Result+ objects, we can access more than just the most likely answer. The +PhaseEstimationResult+ class has these attributes and methods:
+
+* The +circuit_result+ attribute contains the +Result+ object from the job run on the backend.
+* The +phases+ attribute contains a dictionary where the keys are measured bit strings and the values are the probability of measuring those bit strings.
+* The +filter_phases()+ method returns the result of the +phases+ attribute but with the keys converted from raw bit strings to decimal phases.
+
++HamiltonianPhaseEstimation+ is essentially a wrapper for the +PhaseEstimation+ class we explored previously. Instead of a unitary circuit, +HamiltonianPhaseEstimation.estimate()+ takes a Hermitian operator (as well as a state preparation circuit). The algorithm then scales and exponentiates the operator, then runs +PhaseEstimation+ on it. +HamiltonianPhaseEstimation.estimate()+ has some other optional parameters:
+
++evolution+:: 
+A convertor to transform the Hermitian operator to a unitary matrix. If unset, then the algorithm uses +PauliTrotterEvolution+.
+
++bound+:: 
+This value limits the magnitude of the operator's eigenvalues, with tighter bounds resulting in better result [.keep-together]#precision#.
+
++IterativePhaseEstimation+:: 
+This algorithm is the same as [.keep-together]#+PhaseEstimation+#, but instead uses multiple circuits to reduce the evaluation register to just one qubit. You can use the constructor in the same way as the +PhaseEstimation+ class. Here, the integer determines the number of iterations, instead of the number of evaluation qubits, but the end result is that both eventually determine the precision of the output phase.
+
+==== Amplitude Estimation Algorithms
+
+The _amplitude estimation_ problem is very similar to amplitude amplification, but instead of trying to map one state to another, the amplitude estimation problem asks what the inner product of those two states is. For example, given an operator that prepares the state latexmath:[$|a\rangle$], and an operator that rotates around latexmath:[$|b\rangle$], find the value of latexmath:[$\langle a | b \rangle$].
+
+Also like Grover's algorithm, we can easily create an _amplitude estimation_ problem from a _counting problem_: given a Boolean function, latexmath:[$f$], that takes an latexmath:[$n$]-bit string as input and returns a single bit as output, the counting problem asks us for the _number_ of bit strings for which latexmath:[$f$] will output 1. For this special case of amplitude estimation, the state latexmath:[$|a\rangle$] is the superposition of all computational basis states, and we can create the operator that rotates around latexmath:[$|b\rangle$] from latexmath:[$f$] using phase kickback.
+
+The +EstimationProblem+ class defines an amplitude estimation problem. The only positional arguments are the state preparation circuit (+state_preparation+) and a list of the qubits to operate on (+objective_qubits+). We should also provide a +grover_operator+ for our algorithm to perform phase estimation on. <<amp_estimation>> shows an example of a circuit that performs phase estimation on a Grover operator, \Q\.
+
+[[amp_estimation]]
+.Example of a circuit for amplitude estimation, with the Q-gate as the Grover operator
+image::images/qkpg_0705.png[""]
+
+In the following code snippet, we'll create an +EstimationProblem+ from a Boolean expression we created in the Grover's algorithm section:
+
+[source,python]
+----
+from qiskit import QuantumCircuit
+from qiskit.circuit.library import (PhaseOracle,
+                                    GroverOperator)
+from qiskit.algorithms import EstimationProblem
+oracle = PhaseOracle('(A | B) & ~(A & B & C)'
+                     '& (B & C)')
+
+grover_op = GroverOperator(oracle)
+
+# Create state preparation operator
+n = oracle.num_qubits
+state_prep = QuantumCircuit(n)
+state_prep.h(range(n))
+
+problem = EstimationProblem(state_prep,
+                            [*range(n)],
+                      grover_operator=grover_op)
+----
+
+Now that we've defined our problem, let's use an algorithm to solve it. First, we'll use Qiskit's +AmplitudeEstimation+ algorithm. This is the original amplitude estimation algorithm that performs phase estimation on a Grover operator. In the following code snippet, we create an +AmplitudeEstimation+ instance with nine counting qubits.
+
+We happen to know already that this problem uses three bits (and so +oracle.num_qubits == 3+) and has one solution, so we expect the result to be latexmath:[$1/2^3 = 0.125$]:
+
+[source,python]
+----
+from qiskit.algorithms import AmplitudeEstimation
+from qiskit.providers.aer import AerSimulator
+aer_sim = AerSimulator()
+
+# Create algorithm with nine counting qubits
+estimator = AmplitudeEstimation(9,
+                        quantum_instance=aer_sim)
+result = estimator.estimate(problem)
+result.estimation  # Has value: 0.1254318
+----
+
+We can see that the value of +result.estimation+ is what we expected.
+
+=== Eigensolvers
+
+An _eigensolver_ is an algorithm that finds the eigenvalues (and/or eigenvectors) of a matrix. Since classical computers can solve eigenvalue problems in time polynomial with the size of the input matrix, the difficulty is when we want to solve polynomial sums of Pauli operators that result in exponentially large matrices.
+
+For example, let's use Qiskit's +opflow+ module to create a simple operator:
+
+[source,python]
+----
+from qiskit.opflow import X, Y, Z, I
+
+op = ( .5 * (X ^ Y ^ Z)
+     + .2 * (Y ^ Y ^ I)
+     - .3 * (Z ^ X ^ Z)
+     + .2 * (I ^ X ^ Y))
+op.to_matrix().size  # Has value 64
+----
+
+We can see that the size of this operator's matrix is much larger than the number of operator terms. 
+
+When most of the traditional quantum algorithms were developed, quantum computers were nonexistent, and we didn't even know what they would look like. The only concern was asymptotic scaling; the specific gate count was unimportant. These early pioneers showed that investing in quantum computing would be worth the effort _eventually_, but now that we have small, working devices, another important question is "What can we do that might be useful _soon_?"
+
+Qiskit implements a few near-term algorithms (algorithms with small numbers of qubits and lower gate fidelities in mind). At the time of writing, these are all types of minimum eigensolvers; i.e., eigensolvers that find only the smallest eigenvalue.
+
+
+==== NumPy Eigensolvers
+
+At the time of writing, Qiskit provides only one algorithm to find all eigenvalues of an operator: the classical +NumPyEigensolver+. The following code shows how to use the +NumPyEigensolver+ to find all the eigenvalues of +op+:
+
+[source,python]
+----
+from qiskit.algorithms import NumPyEigensolver
+np_solver = NumPyEigensolver(k=10)
+result = np_solver.compute_eigenvalues(op)
+print(result.eigenvalues.real)
+----
+
+Which prints the output:
+
+[source,python]
+----
+[-0.89442719 -0.89442719 -0.2        -0.2
+  0.2         0.2         0.89442719  0.89442719]
+----
+
+As with all algorithms, we start by creating an instance of the algorithm through the +NumPyEigensolver+ constructor. This constructor takes two optional arguments:
+
++k+:: 
+The number of eigenvalues to compute. This is +1+ by default, which is also the minimum value (otherwise it wouldn't need to compute anything). In the preceding example, we set this to 10, which is higher than the dimension of the matrix, so we got all eight eigenvalues.
+
++filter_criterion+:: 
+This is a callable object that takes three parameters: an eigenstate, that state's eigenvalue, and a tuple containing the mean and standard deviation (called +aux_values+). It returns +True+ if we want to keep this eigenstate/value, or +False+ to ignore it.
+
+We can then use the +compute_eigenvalues+ method to execute the algorithm, giving the operator as a positional parameter. This method returns an +EigensolverResult+ object, which has three attributes:
+
+- +eigenvalues+
+- +eigenstates+
+- +aux_operator_eigenvalues+ (tuples of the mean and standard deviations for each eigenvalue, for algorithms with some uncertainty)
+
+The following code shows a different instance of the +NumPyEigensolver+ with different constructor arguments applied to the preceding problem:
+
+[source,python]
+----
+def ignore_negative(state, value, aux):
+    return value >= 0  # bool
+
+np_solver = NumPyEigensolver(k=3,
+                filter_criterion=ignore_negative)
+result = np_solver.compute_eigenvalues(op)
+result.eigenvalues.real  # [0.2, 0.2, 0.89442719]
+----
+
+Some quantum systems (e.g., molecules) are very difficult to simulate with classical computers (i.e., we don’t have polynomial-time classical algorithms for simulating them). Despite this, we still find these systems in nature, so they must be solvable at least by a universal quantum computer. This quantum simulation problem was one of the earliest proposed applications of programmable quantum computers and is believed to be one of the more realistic near-term applications of quantum computing.
+
+The problem of quantum simulation boils down to solving the Schrödinger equation for a specific Hamiltonian, which is a description of how the quantum system evolves with time. The eigenvalues of a Hamiltonian are the possible energies the system can have. We can convert a Hamiltonian into a matrix (which must be Hermitian, as the energy is a real number) and then use an eigensolver to find the allowed energies of the system. If we can write a Hamiltonian as a polynomially sized sum of Pauli operators, then we can simulate this Hamiltonian efficiently on our quantum computer but not necessarily on a classical computer.
+
+Since systems are usually more stable at their lower energy levels, the lowest possible energy of a system is often the most interesting. Qiskit's quantum eigensolvers are all minimum eigensolvers that aim to find only this smallest energy eigenvalue.
+
+The next algorithm we will look at is the +NumPyMinimumEigensolver+, which is the same algorithm as the +NumPyEigensolver+ but returns only the lowest eigenvalue/vector. We can use this algorithm to check the accuracy of our quantum algorithms for relatively small matrices:
+
+[source,python]
+----
+from qiskit.algorithms import (
+                 NumPyMinimumEigensolver)
+np_min_solver = NumPyMinimumEigensolver()
+result = np_min_solver.compute_minimum_eigenvalue(
+                                      op)
+----
+
+As with the +NumPyEigensolver+ shown in the eigensolvers section, we can also provide an optional +filter_criterion+ function to ignore certain eigenvalues/states. The returned result object also has +eigenstate+ and +aux_operator_eigenvalues+ attributes.
+
+
+==== The Variational Quantum Eigensolver
+
+Next, we'll look at the famous variational quantum eigensolver. This algorithm uses the fact that quantum computers can perform Hamiltonians efficiently, and uses this to calculate the expectation value of the Hamiltonian. The lowest possible expectation value we can measure will be the lowest eigenvalue of the Hamiltonian (when the state is its corresponding [.keep-together]#eigenstate#).
+
+The variational algorithms use a parameterized quantum circuit to prepare different quantum states. The algorithm measures the expectation values of these states, then uses a classical optimizer to try and find the lowest expectation value (that will hopefully also be the lowest eigenvalue).
+
+We can create an instance of this algorithm using the +VQE+ class. The constructor has two required arguments: the parameterized circuit and the backend we'll run the algorithm on. For this simple example, we'll use +EfficientSU2+ from the circuit library and the +AerSimulator's+ +statevector+ method:
+
+[source,python]
+----
+from qiskit.providers.aer import AerSimulator
+from qiskit.algorithms import VQE
+from qiskit.circuit.library import EfficientSU2
+
+circuit = EfficientSU2()
+vqe = VQE(circuit,
+          quantum_instance=AerSimulator(
+	              method='statevector')
+	 )
+result = vqe.compute_minimum_eigenvalue(op)
+result.eigenvalue.real  # -0.8944268580187336
+----
+
+The +compute_minimum_eigenvalue+ method returns a result object with an +eigenvalue+ attribute. Comparing this with the +NumPyMinimumEigensolver+ result, we can see the algorithm has found the correct minimum eigenvalue. The +MinimumEigensolverResult+ object returned by the Variational Quantum Eigensolver (VQE) algorithm also has some other attributes, including the following:
+
+[source,python]
+----
+result.cost_function_evals  # Has value: 477
+----
+
+Shows the number of times the algorithm measured the expectation value of the operator. The result object also contains the circuit parameters that create this best eigenstate (+optimal_parameters+, or +optimal_point+, depending on if you want a dictionary or a list) and the time taken by the algorithm (+optimizer_time+).
+
+The +VQE+ constructor also takes other optional arguments. One useful argument is the +callback+ argument, which lets us call custom code at each step of the optimization. This argument takes a callable that has four positional arguments:
+
+Evaluation count:: 
+The number of steps taken so far in the optimization.
+Parameters:: 
+The parameters of the parameterized circuit at this point in the optimization. If everything's going well, this will usually be the best-known parameters so far.
+Mean:: 
+This is the estimated expectation value at this point in the optimization.
+Standard deviation: The standard deviation of the distribution averaged to find the mean.
+
+The following code creates a simple class with a method that accepts these values and stores some of them for analysis afterward. You might also use a callback to print updates throughout the optimization:
+
+
+[source,python]
+----
+class VQELog():
+    def __init__(self):
+        self.counts = []
+        self.params = []
+        self.means = []
+    def callback(self, eval_count, params,
+                            mean, std_dev):
+        self.counts.append(eval_count)
+        self.params.append(params)
+        self.means.append(mean)
+----
+
+In the following code, we run VQE again with the callback and use this info to draw a graph showing how the algorithm progresses with each step:
+
+[source,python]
+----
+log = VQELog()
+vqe = VQE(circuit,
+          callback=log.callback,
+          quantum_instance=AerSimulator(
+	              method='statevector')
+	 )
+result = vqe.compute_minimum_eigenvalue(op)
+result.eigenvalue.real  # -0.8944268580187336
+
+import matplotlib.pyplot as plt
+plt.plot(log.counts, log.means);
+----
+
+<<mean_vs_eval_count>> shows the plot created by the preceding code.
+
+[[mean_vs_eval_count]]
+.Graph of mean versus evaluation count
+image::images/qkpg_0706.png[""]
+
+Another useful argument is the +initial_point+ argument. By default, the VQE algorithm chooses a random set of numbers as starting circuit parameters, but if we have a good idea where the minimum might be, this argument allows us to start the algorithm from that point instead. For example, let's start our algorithm off closer to the minimum; the preceding code runs the VQE algorithm as before but starting with the parameters the algorithm discovered in the 200th optimization step in the preceding results:
+
+[source,python]
+----
+initial_point = log.params[200]
+log = VQELog()
+vqe = VQE(circuit,
+          callback=log.callback,
+          initial_point=initial_point,
+          quantum_instance=AerSimulator(
+	              method='statevector')
+	 )
+result = vqe.compute_minimum_eigenvalue(op)
+result.eigenvalue.real  # -0.8944270665137739
+plt.plot(log.counts, log.means);
+----
+
+<<mean_vs_eval_count_intial_point>> shows the plot created by the preceding code.
+
+[[mean_vs_eval_count_intial_point]]
+.Graph of mean versus evaluation count for an algorithm starting at a point close to the optimal point
+image::images/qkpg_0707.png[""]
+
+We can see that the algorithm found the minimum much faster.
+
+==== Parameterized Circuits
+
+We can also adjust the VQE algorithm by choosing a different form of parameterized circuit. In the previous section, we used the +EfficientSU2+ circuit from Qiskit's library, but we could also use other circuits, depending on the application. For example, the +TwoLocal+ circuit has fewer parameters, and so can converge much faster, but has the downside of not being able to create as many quantum states:
+
+[source,python]
+----
+from qiskit.circuit.library import (EfficientSU2,
+                                    TwoLocal)
+len(EfficientSU2(3).parameters)  # 24
+len(TwoLocal(3, 'ry', 'cx').parameters)  # 12
+----
+
+In the following code cell, we use the +TwoLocal+ circuit, with layers of +ry+ and +cx+ gates. The algorithm performs poorly and converges on a value close to +-0.5+ because this version of the +TwoLocal+ gate can't create the lowest eigenstate of the operator:
+
+[source,python]
+----
+log = VQELog()
+vqe = VQE(TwoLocal(3, 'ry', 'cx'),
+          callback=log.callback,
+          quantum_instance=AerSimulator(
+	              method='statevector')
+	 )
+result = vqe.compute_minimum_eigenvalue(op)
+plt.plot(log.counts, log.means);
+result.eigenvalue.real  # -0.49999960316294956
+----
+
+<<mean_vs_eval_count_bad_ansatz>> shows the plot created by the preceding above.
+
+[[mean_vs_eval_count_bad_ansatz]]
+.Graph of mean versus evaluation count for an algorithm using a poor parameterized circuit
+image::images/qkpg_0708.png[""]
+
+If instead we use layers of +rx+ and +cx+ gates, we get much closer. The result is still not as close as with the +EfficientSU2+ circuit, but this circuit converges much faster and gets within 1% of the correct value:
+
+[source,python]
+----
+log = VQELog()
+vqe = VQE(TwoLocal(3, 'rx', 'cx'),
+          callback=log.callback,
+          quantum_instance=AerSimulator(
+	              method='statevector')
+	 )
+result = vqe.compute_minimum_eigenvalue(op)
+result.eigenvalue.real  # -0.8890712131577212
+plt.plot(log.counts, log.means);
+----
+
+<<mean_vs_eval_count_good_ansatz>> shows the plot created by the preceding code.
+
+[[mean_vs_eval_count_good_ansatz]]
+.Graph of mean versus evaluation count for an algorithm using a good parameterized circuit
+image::images/qkpg_0709.png[""]
+
+We can use any parameterized circuit with +VQE+, but some are more useful than others. We generally prefer circuits that can create many states (better chance it can create our specific eigenstate) but that also scale efficiently enough to be useful on near-term devices. Qiskit's circuit library contains some circuits designed for this use, known as _N-local_ circuits.
+
+Qiskit's N-local circuits have two layers: a _rotation_ layer and an _entangling_ layer. The rotation layer is a set of gates that act only on single qubits, or on small subsets of qubits. The entangling layer is usually where the parameters are. This is a set of multiqubit (e.g., +CCX+) gates aimed to help us create entangled states.
+
+The most general of these is the +NLocal+ circuit. In the following code snippet, we create an +NLocal+ circuit with three qubits, using +YGates+ in the rotation layers and +CZGates+ in the entangling layers:
+
+[source,python]
+----
+from qiskit.circuit.library import NLocal
+from qiskit.circuit.library import RYGate, CZGate
+from qiskit.circuit import Parameter
+NLocal(3, # Number of qubits
+          # Gate in rotation layer
+          RYGate(Parameter('theta')),
+          # Gates in entangling layer
+          CZGate(),
+          # Entangling gate pattern
+          reps=3)
+----
+
+<<nlocal_circuit>> shows the circuit created in the preceding code snippet, decomposed one layer.
+
+[[nlocal_circuit]]
+.Example of an N-local circuit
+image::images/qkpg_0710.png[""]
+
+With +entanglement=\'full\'+, the entangling layers perform gates between each possible qubit pair, but the number of gates this introduces scales quadratically with the number of qubits. We can instead change this to +\'linear\'+, +\'circular\'+, or +\'sca\'+ for different entangling schemes that each use around one entangling gate per qubit. We can also choose how many times the circuit repeats through the +reps+ argument, which is +1+ by default.
+
+A specific case of the +NLocal+ circuit is the +TwoLocal+ circuit, which we've already seen in action as a parameterized circuit. This circuit template has layers of single-qubit gates, followed by layers of two-qubit entangling gates (e.g., CNOTs). As we saw earlier, we can choose the gates this circuit uses in the rotation layers using strings, but we could also pass +Gate+ or +QuantumCircuit+ objects instead. Here, +reps+ is +3+ by default, so the following line:
+
+[source,python]
+----
+from qiskit.circuit.library import TwoLocal
+TwoLocal(3, 'ry', 'cz')
+----
+
+creates the same circuit as the +NLocal+ circuit we created previously (shown decomposed in <<nlocal_circuit>>).
+
+Another example is the +RealAmplitudes+ circuit, a special case of +TwoLocal+, in which the single-qubit gates are +ry+ gates and the two-qubit gates are +cx+ gates. This circuit produces states with only real amplitudes (i.e., phase = 0), hence the name.
+
+==== Optimizers
+
+The other key factor in variational algorithms is the classical program that decides how to twiddle the parameters to minimize or maximize the expectation value. Qiskit calls these programs _optimizers_, and stores them under +qiskit.algorithms.optimizers+. In this guide, we will focus on _local_ optimizers, which aim to find only local extrema and not necessarily the absolute lowest- or highest-possible energy. At the time of writing, Qiskit provides roughly 20 local optimizers.
+
+<<optimizers_comparison>> shows a few different local optimizers finding the minimum of a very simple landscape, with only two parameters. The x and y axes are the different possible values of the parameters, and the height of the surface shows the expectation value for those parameters. The black lines show the path the optimizers took, and the dots show the different "points" at each step in the optimization process. Note that performance on this landscape with these arguments might not be indicative of performance in general.
+
+At a high level, each of these optimizers evaluate, the expectation value for a set of parameters (which we'll call a _point_), and then uses this information to guess which new points might have better expectation values. As we saw previously, we can specify a starting point if we have a good idea of where the optimal value might be, or VQE can choose a random starting point for us.
+
+[[optimizers_comparison]]
+.How different optimizers explore a simple 2D landscape
+image::images/qkpg_0711.png[""]
+
+For example, +GradientDescent+ is a simple algorithm that estimates the gradient at its current point by measuring the difference in expectation values for small changes (perturbations) in the parameters. The algorithm then moves a step in the direction of steepest downward descent. We can tell the VQE algorithm to use this optimizer through the +optimizer+ parameter: in the following code snippet. We'll try this out with the default parameters:
+
+[source,python]
+----
+from qiskit.algorithms.optimizers import (
+                                    GradientDescent)
+log = VQELog()
+vqe = VQE(EfficientSU2(),
+          optimizer=GradientDescent(),
+          callback=log.callback,
+          quantum_instance=AerSimulator(
+	              method='statevector')
+	 )
+result = vqe.compute_minimum_eigenvalue(op)
+result.eigenvalue.real  # -0.5997810307109372
+----
+
+The algorithm performed pretty poorly here. We know this parameterized circuit can achieve the correct value of ~ +-0.894+, so what happened? If we look at the log (<<gradient_descent_small_steps>>), we can see the algorithm used 2,500 evaluations (the default maximum for +GradientDescent+), so the optimizer timed out before reaching the best value.
+
+[[gradient_descent_small_steps]]
+.Graph of mean versus evaluation count for each point in the VQE search using gradient descent
+image::images/qkpg_0712.png[""]
+
+We can see the optimizer was heading toward the minimum correctly, but the steps were too small to get there in time. We could increase the number of iterations through the +GradientDescent's+ +\'maxiter\'+ parameter, or better yet, change the size of steps through the +\'learning_rate\'+ parameter. The default is +0.01+, so in the following code snippet, we set it to +0.2+ to speed up convergence:
+
+[source,python]
+----
+log = VQELog()
+vqe = VQE(EfficientSU2(),
+          optimizer=GradientDescent(
+	      learning_rate=0.2
+	      ),
+          callback=log.callback,
+          quantum_instance=AerSimulator(
+	              method='statevector')
+	 )
+result = vqe.compute_minimum_eigenvalue(op)
+result.eigenvalue.real  # -0.8938653211271332
+----
+
+<<gradient_descent_larger_steps>> shows how the +GradientDescent+ algorithm converges as it progresses. The optimizer approaches the value faster but still hits the maximum evaluation count before converging.
+
+[[gradient_descent_larger_steps]]
+.Graph of mean versus evaluation count for each point in the VQE search using gradient descent, with a larger learning rate
+image::images/qkpg_0713.png[""]
+
+This performs much better but still doesn't converge before running out of evaluations.
+
+For better performance, we can instead use the COBYLA algorithm (Constrained Optimization By Linear Approximation, also known as Powell's method). This method doesn't need to estimate the gradient at each point, which saves circuit runs. Instead, the algorithm roughly calculates the gradient with a couple of evaluations (seen in the triangle-like path at the start of the optimization in <<optimizers_comparison>>), then optimizes along a 1D line. Once it hits that constrained minimum, it chooses a new direction based on the approximated gradient and does another constrained optimization along this new line:
+
+[source,python]
+----
+from qiskit.algorithms.optimizers import COBYLA
+log = VQELog()
+vqe = VQE(EfficientSU2(),
+          optimizer=COBYLA(),
+          callback=log.callback,
+          quantum_instance=AerSimulator(
+	              method='statevector')
+	 )
+result = vqe.compute_minimum_eigenvalue(op)
+result.eigenvalue.real  # -0.8944270576823009
+----
+
+<<cobyla>> plots the measured expectation values for each evaluation from the preceding code.
+
+[[cobyla]]
+.Graph of expectation value versus evaluation count for each point in the VQE search, using COBYLA.
+image::images/qkpg_0714.png[""]
+
+This short example shows that the choice of optimizer can make a big difference in the performance of our algorithms. Qiskit provides many optimizers, each with different arguments, behaviors, and performance levels on different tasks.
+
+

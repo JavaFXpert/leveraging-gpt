@@ -1,0 +1,328 @@
+[[quantum_visualizations]]
+
+== Visualizing Quantum Measurements and States
+
+In addition to drawing circuits (see <<drawing_quantum_circuit>>), Qiskit provides visualizations for data such as measurement counts and quantum states.
+
+=== Visualizing Measurement Counts
+
+To visualize experiments that result in measurement counts, Qiskit contains the +plot_histogram()+ function.
+
+==== Using the plot_histogram Function
+
+The +plot_histogram()+ function takes a dictionary containing measurement counts and plots them in a bar graph with one bar per basis state. We'll demonstrate this function in <<plot_histogram_listing>> by plotting the measurement counts from the example in <<aersimulator_hold_measurements>>.
+
+[[plot_histogram_listing]]
+.Using the +plot_histogram()+ function to plot measurement counts
+====
+[source,python]
+----
+from qiskit import QuantumCircuit,Aer,transpile
+from qiskit.visualization import plot_histogram
+
+qc = QuantumCircuit(2)
+qc.h(0)
+qc.cx(0, 1)
+qc.measure_all()
+
+backend = Aer.get_backend("aer_simulator")
+tqc = transpile(qc, backend)
+job = backend.run(tqc, shots=1000)
+result = job.result()
+counts = result.get_counts(tqc)
+
+plot_histogram(counts)
+----
+====
+
+<<plot_histogram_image>> shows the counts expressed as probabilities in a bar graph.
+
+[[plot_histogram_image]]
+.Example bar graph using the +plot_histogram()+ function
+image::images/qkpg_0301.png[""]
+
+
+<<plot_histogram_params_table>> contains a list of commonly used +plot_histogram+ parameters. This is implemented with +matplotlib+, which uses parameters shown in the table, such as +figsize+.
+
+
+[[plot_histogram_params_table]]
+.Commonly used +plot_histogram+ parameters
+[options="header"]
+|=======
+|Param name|Description
+|+data+|Dictionary, or list of dictionaries, containing measurement counts.
+|+figsize+|Tuple containing figure size in inches.
+|+color+|String or list of strings for bar colors.
+|+legend+|A list of strings to label the data. The number of entries must match the number of dictionaries in the data parameter.
+|+bar_labels+|Boolean that causes each bar to be labeled with probability values.
+|+title+|A string to label the plot title.
+|=======
+
+
+=== Visualizing Quantum States
+
+Qiskit contains several functions for visualizing statevectors and density matrices, including the following: 
+
+* +plot_state_qsphere()+
+* +plot_state_city()+
+* +plot_bloch_multivector()+
+* +plot_state_hinton()+
+* +plot_state_paulivec()+
+
+
+==== Using the plot_state_qsphere Function
+
+The +plot_state_qsphere()+ function takes a statevector or density matrix and represents it on a _Q-sphere_. Often confused with a Bloch sphere, the Q-sphere is great for visualizing multi-qubit quantum states. We'll demonstrate this function in <<plot_state_qsphere_listing>> by plotting the statevector from a circuit containing a _quantum Fourier transform_ (QFT).
+
+[[plot_state_qsphere_listing]]
+.Using the +plot_state_qsphere()+ function to plot a statevector
+====
+[source,python]
+----
+from qiskit import QuantumCircuit,Aer,transpile
+from qiskit.visualization import plot_state_qsphere
+from math import pi
+
+backend = \
+    Aer.get_backend("aer_simulator_statevector")
+
+qc = QuantumCircuit(3)
+qc.rx(pi, 0)
+qc.ry(pi/8, 2)
+qc.swap(0, 2)
+qc.h(0)
+qc.cp(pi/2,0, 1)
+qc.cp(pi/4, 0, 2)
+qc.h(1)
+qc.cp(pi/2, 1, 2)
+qc.h(2)
+qc.save_statevector()
+
+tqc = transpile(qc, backend)
+job = backend.run(tqc)
+result = job.result()
+statevector = result.get_statevector()
+
+plot_state_qsphere(statevector)
+----
+====
+
+<<plot_state_qsphere_image>> shows a Q-sphere with a point for each basis state. The size of each point is proportional to its measurement probability, and a point's color corresponds to its phase. Notice that the basis states are placed on the poles and latitude lines of the sphere according to their _Hamming weights_ (number of ones in their basis states), starting from all zeros at the top and all ones at the bottom.
+
+[[plot_state_qsphere_image]]
+.Example Q-sphere produced by the +plot_state_qsphere()+ function
+image::images/qkpg_0302.png[""]
+
+
+<<plot_state_qsphere_params_table>> contains a list of commonly used +plot_state_qsphere+ parameters.
+
+
+[[plot_state_qsphere_params_table]]
+.Commonly used +plot_state_qsphere+ parameters
+[options="header"]
+|=======
+|Param name|Description
+|+state+|+Statevector+, +DensityMatrix+, or +ndarray+ (a NumPy type) containing complex numbers that represents a pure or mixed quantum state
+|+figsize+|Tuple containing figure size in inches
+|+show_state_labels+|Boolean indicating whether to show labels for each basis state
+|+show_state_phases+|Boolean indicating whether to show the phase for each basis state
+|+use_degrees+|Boolean indicating whether to use degrees for the phase values in the plot
+|=======
+
+
+
+==== Using the plot_state_city Function
+
+The +plot_state_city()+ function takes a statevector or density matrix and represents it on a pair of three-dimensional bar graphs also known as a _cityscape_. We'll demonstrate this function in <<plot_state_city_listing>> by plotting the density matrix from the _mixed state_ example in <<using_density_matrix>>.
+
+[[plot_state_city_listing]]
+.Using the +plot_state_city()+ function to plot a density matrix for a _mixed state_
+====
+[source,python]
+----
+from qiskit.quantum_info import DensityMatrix, \
+                                      Operator
+from qiskit.visualization import plot_state_city
+
+dens_mat = 0.5*DensityMatrix.from_label('11') + \
+  0.5*DensityMatrix.from_label('+0')
+tt_op = Operator.from_label('TT')
+dens_mat = dens_mat.evolve(tt_op)
+
+plot_state_city(dens_mat)
+----
+====
+
+<<plot_state_city_image>> shows a pair of 3D bar graphs that represent the complex numbers in the density matrix. The left 3D bar graph represents the real parts, and the right 3D bar graph represents the imaginary parts. See <<using_density_matrix>> for a discussion on the _mixed state_ in this example.
+
+[[plot_state_city_image]]
+.3D bar graphs produced by the +plot_state_city()+ [.keep-together]#function#
+image::images/qkpg_0303.png[""]
+
+
+<<plot_state_city_params_table>> lists commonly used +plot_state_city+ parameters.
+
+
+[[plot_state_city_params_table]]
+.Commonly used +plot_state_city+ parameters
+[options="header"]
+|=======
+|Param name|Description
+|+state+|+Statevector+, +DensityMatrix+, or +ndarray+ (a NumPy type) containing complex numbers that represents a pure or mixed quantum state
+|+title+|A string to label the plot title
+|+figsize+|Tuple containing figure size in inches
+|+color+|List with two elements that contain colors for the real and imaginary 3D bars
+|+alpha+|Float containing desired transparency for the 3D bars
+|=======
+
+
+
+
+==== Using the plot_bloch_multivector Function
+
+The +plot_bloch_multivector()+ function takes a statevector or density matrix and represents it on one or more Bloch spheres. We'll demonstrate this function in <<plot_bloch_multivector_listing>> by plotting the statevector from a circuit containing a _Quantum Fourier Transform_ (QFT).
+
+[[plot_bloch_multivector_listing]]
+.Using the +plot_bloch_multivector()+ function to plot a statevector
+====
+[source,python]
+----
+from qiskit import QuantumCircuit,Aer,transpile
+from qiskit.visualization \
+    import plot_bloch_multivector
+from math import pi
+
+backend = \
+    Aer.get_backend("aer_simulator_statevector")
+
+qc = QuantumCircuit(3)
+qc.rx(pi, 0)
+qc.ry(pi/8, 2)
+qc.swap(0, 2)
+qc.h(0)
+qc.cp(pi/2,0, 1)
+qc.cp(pi/4, 0, 2)
+qc.h(1)
+qc.cp(pi/2, 1, 2)
+qc.h(2)
+qc.save_statevector()
+
+tqc = transpile(qc, backend)
+job = backend.run(tqc)
+result = job.result()
+statevector = result.get_statevector()
+
+plot_bloch_multivector(statevector)
+----
+====
+
+<<plot_bloch_multivector_image>> shows one Bloch sphere for each qubit in a quantum state. Note that the arrow doesn't always reach the surface of the Bloch sphere, namely in cases where qubits are entangled or the state is a _mixed state_ (see the mixed state example in <<using_density_matrix>>).
+
+[[plot_bloch_multivector_image]]
+.Example Bloch spheres produced by the +plot_bloch_multivector()+ [.keep-together]#function#
+image::images/qkpg_0304.png[""]
+
+
+<<plot_bloch_multivector_params_table>> shows commonly used +plot_bloch_multivector+ parameters.
+
+
+[[plot_bloch_multivector_params_table]]
+.Commonly used +plot_bloch_multivector+ parameters
+[options="header"]
+|=======
+|Param name|Description
+|+state+|+Statevector+, +DensityMatrix+, or +ndarray+ (a NumPy type) containing complex numbers that represents a pure or mixed quantum state
+|+title+|A string to label the plot title
+|+figsize+|Tuple containing figure size in inches
+|+reverse_bits+|Boolean indicating whether to show the most significant Bloch sphere on the left
+|=======
+
+
+==== Using the plot_state_hinton Function
+
+The +plot_state_hinton()+ function takes a statevector or density matrix and represents it on a _Hinton diagram_. We'll demonstrate this function in <<plot_state_hinton_listing>> by plotting the density matrix from the _mixed state_ example in <<using_density_matrix>>.
+
+[[plot_state_hinton_listing]]
+.Using the +plot_state_hinton()+ function to plot a density matrix for a _mixed state_
+====
+[source,python]
+----
+from qiskit.quantum_info import DensityMatrix, \
+                                      Operator
+from qiskit.visualization import plot_state_hinton
+
+dens_mat = 0.5*DensityMatrix.from_label('11') + \
+  0.5*DensityMatrix.from_label('+0')
+tt_op = Operator.from_label('TT')
+dens_mat = dens_mat.evolve(tt_op)
+
+plot_state_hinton(dens_mat)
+----
+====
+
+<<plot_state_hinton_image>> shows a Hinton diagram that represents the complex numbers in the density matrix. The left half represents the real parts, and the right half represents the imaginary parts. See <<using_density_matrix>> for a discussion on the _mixed state_ in this example.
+
+[[plot_state_hinton_image]]
+.Hinton diagram produced by the +plot_state_hinton()+ function
+image::images/qkpg_0305.png["Hinton diagram produced by the +plot_state_hinton()+ function", 100%]
+
+
+<<plot_state_hinton_params_table>> contains a list of commonly used +plot_state_hinton+ parameters.
+
+
+[[plot_state_hinton_params_table]]
+.Commonly used +plot_state_hinton+ parameters
+[options="header"]
+|=======
+|Param name|Description
+|+state+|+Statevector+, +DensityMatrix+, or +ndarray+ (a NumPy type) containing complex numbers that represents a pure or mixed quantum state
+|+title+|A string to label the plot title
+|+figsize+|Tuple containing figure size in inches
+|=======
+
+
+
+
+==== Using the plot_state_paulivec Function
+
+The +plot_state_paulivec()+ function takes a statevector or density matrix and represents it as a sparse bar graph of _expectation values_ over the Pauli matrices. We'll demonstrate this function in <<plot_state_paulivec_listing>> by representing the density matrix from the _mixed state_ example in <<using_density_matrix>>.
+
+[[plot_state_paulivec_listing]]
+.Using the +plot_state_paulivec()+ function to represent a density matrix for a _mixed state_
+====
+[source,python]
+----
+from qiskit.quantum_info import DensityMatrix, \
+                                      Operator
+from qiskit.visualization import plot_state_paulivec
+
+dens_mat = 0.5*DensityMatrix.from_label('11') + \
+  0.5*DensityMatrix.from_label('+0')
+tt_op = Operator.from_label('TT')
+dens_mat = dens_mat.evolve(tt_op)
+
+plot_state_paulivec(dens_mat)
+----
+====
+
+<<plot_state_paulivec_image>> shows a sparse bar graph that represents the density matrix as expectation values over the Pauli matrices.
+
+[[plot_state_paulivec_image]]
+.Bar graph produced by the +plot_state_paulivec()+ [.keep-together]#function#
+image::images/qkpg_0306.png[""]
+
+
+<<plot_state_paulivec_params_table>> lists commonly used +plot_state_paulivec+ parameters.
+
+
+[[plot_state_paulivec_params_table]]
+.Commonly used +plot_state_paulivec+ parameters
+[options="header"]
+|=======
+|Param name|Description
+|+state+|Statevector, +DensityMatrix+, or ndarray (a NymPy type) containing complex numbers that represents a pure or mixed quantum state
+|+title+|A string to label the plot title
+|+figsize+|Tuple containing figure size in inches
+|+color+|String or list of strings for the expectation value bar colors
+|=======
+

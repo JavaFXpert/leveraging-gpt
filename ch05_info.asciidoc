@@ -1,0 +1,611 @@
+[[qiskit_quantum_info_chap]]
+== Quantum Information
+
+The first three letters in the name Qiskit stand for _quantum information science_, which is the study of how quantum systems may be used to represent, process, and transmit information. The +quantum_info+ module of Qiskit contains classes and functions that focus on those capabilities.
+
+=== Using Quantum Information States
+
+The +qiskit.quantum_info+ module contains a few classes, shown in <<quantum_info_states_table>>, that represent quantum information states.
+
+[[quantum_info_states_table]]
+.Classes that represent states in the +qiskit.quantum_info+ module
+[options="header"]
+|=======
+|Class name|Description
+|+Statevector+|Represents a statevector
+|+DensityMatrix+|Represents a density matrix
+|+StabilizerState+|Simulation of stabilizer circuits
+|=======
+
+We'll focus on the two most commonly used of these, namely the +Statevector+ and +DensityMatrix+ classes.
+
+[[using_statevector_class]]
+==== Using the Statevector Class
+
+The +Statevector+ class represents a quantum statevector and contains functionality for initializing and operating on the statevector. For example, as shown in the following code snippet, a +Statevector+ may be instantiated by passing in a +QuantumCircuit+ instance:
+
+[source,python]
+----
+from qiskit import QuantumCircuit
+from qiskit.quantum_info import Statevector
+
+qc = QuantumCircuit(2)
+qc.h(0)
+qc.cx(0, 1)
+
+statevector = Statevector(qc)
+print(statevector.data)
+
+output:
+  [0.70710678+0.j 0.+0.j 0.+0.j 0.7071+0.j]
+----
+
+Notice that instead of running the circuit on a quantum simulator to get the statevector (as shown in the code in <<aersimulator_statevector>>), we simply create an instance of +Statevector+ with the desired +QuantumCircuit+.
+
+Another way of creating a +Statevector+ is to pass in a normalized complex vector, as shown in the following code snippet:
+
+[source,python]
+----
+import numpy as np
+from qiskit.quantum_info import Statevector
+
+statevector = \
+  Statevector([1, 0, 0, 1] / np.sqrt(2))
+print(statevector.data)
+
+output:
+  [0.70710678+0.j 0.+0.j 0.+0.j 0.7071+0.j]
+----
+
+Yet another way of creating a +Statevector+ is to pass a string of eigenstate ket labels to the +from_label+ method, as shown in the following code snippet:
+
+[source,python]
+----
+from qiskit.quantum_info import Statevector
+
+statevector = Statevector.from_label('01-')
+print(statevector.data)
+
+output:
+  [0.+0.j  0.+0.j  0.70710678+0.j -0.70710678+0.j
+  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
+----
+
+Tables <<statevector_methods_table, 5-2>> and <<statevector_attributes_table, 5-3>> describe some of the methods and attributes in the +Statevector+ class.
+
+[[statevector_methods_table]]
+.Some +Statevector+ methods
+[options="header"]
+|=======
+|Method name|Description
+|+conjugate+|Returns the complex conjugate of the +Statevector+.
+|+copy+|Creates and returns a copy of the +Statevector+.
+|+dims+|Returns a tuple of dimensions.
+|+draw+|Returns a visualization of the +Statevector+, given the desired output method from the following: 'text', 'latex', 'latex_source', 'qsphere', 'hinton', 'bloch', 'city', or 'paulivec'. Also see <<quantum_visualizations>>.
+|+equiv+|Returns a Boolean indicating whether a supplied +Statevector+ is equivalent to this one, up to a global phase.
+|+evolve+|Returns a quantum state evolved by the supplied operator. Also see <<using_quantum_information_operators>>.
+|+expand+|Returns the reverse-order tensor product state of this +Statevector+ and a supplied +Statevector+.
+|+expectation_value+|Computes and returns the expectation value of a supplied operator.
+|+from_instruction+|Returns the +Statevector+ output of a supplied +Instruction+ or +QuantumCircuit+ instance.
+|+from_label+|Instantiates a +Statevector+ given a string of eigenstate ket labels. Each ket label may be +0+, +1+, +++, +-+, +r+, or +l+ and correspond to the six states found on the X, Y, and Z axes of a Bloch sphere.
+|+inner+|Returns the inner product of this +Statevector+ and a supplied +Statevector+.
+|+is_valid+|Returns a Boolean indicating whether this +Statevector+ has norm 1.
+|+measure+|Returns the measurement outcome as well as post-measure state.
+|+probabilities+|Returns the measurement probability vector.
+|+probabilities_dict+|Returns the measurement probability dictionary.
+|+purity+|Returns a number from 0 to 1 indicating the purity of this quantum state. 1.0 indicates that this +Statevector+ represents a pure quantum state.
+|+reset+|Resets to the 0 state.
+|+reverse_qargs+|Returns a +Statevector+ with reversed basis state ordering.
+|+sample_counts+|Samples the probability distribution a supplied number of times, returning a dictionary of the counts.
+|+sample_memory+|Samples the probability distribution a supplied number of times, returning a list of the measurement results.
+|+seed+|Sets the seed for the quantum state random number generator.
+|+tensor+|Returns the tensor product state of this +Statevector+ and a supplied +Statevector+.
+|+to_dict+|Returns the +Statevector+ as a dictionary.
+|+to_operator+|Returns a rank-1 projector operator by taking the outer product of the +Statevector+ with its complex conjugate.
+|+trace+|Returns the trace of the quantum state as if it were represented as a density matrix. Also see <<using_density_matrix>>.
+|=======
+
+[[statevector_attributes_table]]
+.Some +Statevector+ attributes
+[options="header"]
+|=======
+|Attribute name|Description
+|+data+|Contains the complex vector
+|+dim+|Contains the number of basis states in the statevector
+|+num_qubits+|Contains the number of qubits in the statevector, or None
+|=======
+
+===== Example of using Statevector methods
+As an example of using some of these +Statevector+ methods and attributes, we'll first use the +from_label+ method to create a +Statevector+ whose basis states have equal probabilities of being the result of a measurement:
+
+[source,python]
+----
+from qiskit.quantum_info import Statevector
+
+statevector = Statevector.from_label('+-')
+print(statevector.data)
+
+output:
+  [ 0.5+0.j -0.5+0.j  0.5+0.j -0.5+0.j]
+----
+
+We'll then use the +draw+ method to visualize the statevector as the Q-sphere shown in <<statevector_qsphere_image>>:
+
+[source,python]
+----
+statevector.draw("qsphere")
+----
+
+[[statevector_qsphere_image]]
+.Example visualization produced with +Statevector+ +draw("qsphere")+
+image::images/qkpg_0501.png[""]
+
+Next, we'll use the +probabilities+ method to show the probabilities of each basis state being the result of a measurement:
+
+[source,python]
+----
+print(statevector.probabilities())
+
+output:
+  [0.25 0.25 0.25 0.25]
+----
+
+Finally, we'll use the +sample_counts+ method to sample the probability distribution as if the circuit were being measured one thousand times:
+
+[source,python]
+----
+print(statevector.sample_counts(1000))
+
+output:
+  {'00': 241, '01': 229, '10': 283, '11': 247}
+----
+
+
+
+[[using_density_matrix]]
+==== Using the DensityMatrix Class
+
+The +DensityMatrix+ class represents a quantum density matrix and contains functionality for initializing and operating on the density matrix. For example, as shown in the following code snippet, a +DensityMatrix+ may be instantiated by passing in a +QuantumCircuit+ instance:
+
+[source,python]
+----
+from qiskit import QuantumCircuit
+from qiskit.quantum_info import DensityMatrix
+
+qc = QuantumCircuit(2)
+qc.h(0)
+qc.cx(0, 1)
+qc.z(1)
+
+dens_mat = DensityMatrix(qc)
+print(dens_mat.data)
+
+output:
+  [[ 0.5+0.j  0. +0.j  0. +0.j -0.5+0.j]
+   [ 0. +0.j  0. +0.j  0. +0.j  0. +0.j]
+   [ 0. +0.j  0. +0.j  0. +0.j  0. +0.j]
+   [-0.5+0.j  0. +0.j  0. +0.j  0.5+0.j]]
+----
+
+Notice that the +DensityMatrix+ contains a complex matrix, as opposed to the +Statevector+, which contains a complex vector. This enables the +DensityMatrix+ to represent _mixed states_, which are an ensemble of two or more quantum states.
+
+Tables <<densitymatrix_methods_table, 5-4>> and <<densitymatrix_attributes_table, 5-5>> describe some of the methods and attributes in the +DensityMatrix+ class.
+
+[[densitymatrix_methods_table]]
+.Some +DensityMatrix+ methods
+[options="header"]
+|=======
+|Method name|Description
+|+conjugate+|Returns the complex conjugate of the density matrix.
+|+copy+|Creates and returns a copy of the density matrix.
+|+dims+|Returns a tuple of dimensions.
+|+draw+|Returns a visualization of the +DensityMatrix+, given the desired output method from the following: 'text', 'latex', 'latex_source', 'qsphere', 'hinton', 'bloch', 'city', or 'paulivec'. Also see <<quantum_visualizations>>.
+|+evolve+|Returns a quantum state evolved by the supplied operator. Also see <<using_quantum_information_operators>>.
+|+expand+|Returns the reverse-order tensor product state of this density matrix and a supplied +DensityMatrix+.
+|+expectation_value+|Computes and returns the expectation value of a supplied operator.
+|+from_instruction+|Returns the +DensityMatrix+ output of a supplied +Instruction+ or +QuantumCircuit+ instance.
+|+from_label+|Instantiates a +DensityMatrix+ given a string of eigenstate ket labels. Each ket label may be +0+, +1+, +++, +-+, +r+, or +l+ and correspond to the six states found on the X, Y, and Z axes of a Bloch sphere.
+|+is_valid+|Returns a Boolean indicating whether this density matrix has trace 1 and is positive semidefinite.
+|+measure+|Returns the measurement outcome as well as post-measure state.
+|+probabilities+|Returns the measurement probability vector.
+|+probabilities_dict+|Returns the measurement probability dictionary.
+|+purity+|Returns a number from 0 to 1 indicating the purity of this quantum state. 1.0 indicates that this density matrix represents a pure quantum state.
+|+reset+|Resets to the 0 state.
+|+reverse_qargs+|Returns a +DensityMatrix+ with reversed basis state ordering.
+|+sample_counts+|Samples the probability distribution a supplied number of times, returning a dictionary of the counts.
+|+sample_memory+|Samples the probability distribution a supplied number of times, returning a list of the measurement results.
+|+seed+|Sets the seed for the quantum state random number generator.
+|+tensor+|Returns the tensor product state of this density matrix and a supplied +DensityMatrix+.
+|+to_dict+|Returns the density matrix as a dictionary.
+|+to_operator+|Returns an operator converted from the density matrix.
+|+to_statevector+|Returns a +Statevector+ from a pure density matrix.
+|+trace+|Return the trace of the density matrix.
+|=======
+
+[[densitymatrix_attributes_table]]
+.Some +DensityMatrix+ attributes
+[options="header"]
+|=======
+|Attribute name|Description
+|+data+|Contains the complex matrix
+|+dim+|Contains the number of basis states in the density matrix
+|+num_qubits+|Contains the number of qubits in the density matrix, or none
+|=======
+
+[[density_matrix_example]]
+===== Example of using DensityMatrix methods
+As an example of using some of these +DensityMatrix+ methods and attributes, we'll first create a mixed state by combining two density matrices, each of which is instantiated using the +from_label+ method:
+
+[source,python]
+----
+from qiskit.quantum_info import DensityMatrix, \
+                                      Operator
+
+dens_mat = 0.5*DensityMatrix.from_label('11') + \
+  0.5*DensityMatrix.from_label('+0')
+print(dens_mat.data)
+
+output:
+  [[0.25+0.j  0.+0.j  0.25+0.j  0.+0.j]
+   [0.+0.j    0.+0.j  0.+0.j    0.+0.j]
+   [0.25+0.j  0.+0.j  0.25+0.j  0.+0.j]
+   [0.+0.j    0.+0.j  0.+0.j    0.5+0.j]]
+----
+
+Next we'll use the +evolve+ method to evolve the state with an operator (see <<using_quantum_information_operators>>). We'll then use the +draw+ method to visualize the density matrix as the city plot shown in <<densitymatrix_city_image>>:
+
+[source,python]
+----
+tt_op = Operator.from_label('TT')
+dens_mat = dens_mat.evolve(tt_op)
+dens_mat.draw('city')
+----
+
+[[densitymatrix_city_image]]
+.Example visualization produced by the +DensityMatrix+ +draw+ method
+image::images/qkpg_0502.png[""]
+
+Next, we'll use the +probabilities+ method to show the probabilities of each basis state being the result of a measurement:
+
+[source,python]
+----
+print(dens_mat.probabilities())
+
+output:
+  [0.25 0.0 0.25 0.5]
+----
+
+Finally, we'll use the +sample_counts+ method to sample the probability distribution as if the circuit were being measured one thousand times:
+
+[source,python]
+----
+print(dens_mat.sample_counts(1000))
+
+output:
+  {'00': 240, '10': 256, '11': 504}
+----
+
+
+
+[[using_quantum_information_operators]]
+=== Using Quantum Information Operators
+
+The +qiskit.quantum_info+ module contains a few classes (see <<quantum_info_operators_table>>) that represent quantum information operators.
+
+[[quantum_info_operators_table]]
+.Classes that represent operators in the +qiskit.quan&#x2060;tum&#x200b;_info+ module
+[options="header"]
+|=======
+|Class name|Description
+|+Operator+|Operator class modeled with a complex matrix
+|+Pauli+|Multiqubit Pauli operator
+|+Clifford+|Multiqubit unitary operator from the Clifford group
+|+ScalarOp+|Scalar identity operator class
+|+SparsePauliOp+|Sparse multiqubit operator in a Pauli basis representation
+|+CNOTDihedral+|Multiqubit operator from the CNOT-Dihedral group
+|+PauliList+|List of multiqubit Pauli operators
+//|+PauliTable+|Symplectic representation of a list Pauli matrices
+//|+StabilizerTable+|Symplectic representation of a list Stabilizer matrices
+|=======
+
+We'll focus on the two most commonly used classes, namely the +Operator+ and +Pauli+ classes.
+
+[[using_operator_class]]
+==== Using the Operator Class
+
+The +Operator+ class represents a quantum information operator, modeled by a matrix. For example, an +Operator+ instance was used to evolve the quantum state represented by a +DensityMatrix+ in <<density_matrix_example>>. Operators are used in many ways, including by being placed into a +QuantumCircuit+ with the +append+ method discussed in <<using_the_append_method>>.
+
+An +Operator+ may be instantiated in several ways, one of which is by passing in a +QuantumCircuit+ instance, as shown in the following code snippet:
+
+[source,python]
+----
+from qiskit import QuantumCircuit
+from qiskit.quantum_info import Operator
+
+qc = QuantumCircuit(2)
+qc.id(0)
+qc.x(1)
+
+op_XI = Operator(qc)
+print(op_XI.data)
+
+output:
+  [[0.+0.j 0.+0.j 1.+0.j 0.+0.j]
+   [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
+   [1.+0.j 0.+0.j 0.+0.j 0.+0.j]
+   [0.+0.j 1.+0.j 0.+0.j 0.+0.j]]
+----
+
+Notice that the matrix for the operator is the unitary for the circuit. This technique may be used to obtain a unitary for a circuit without running it on a quantum simulator (as shown in the code in <<aersimulator_unitary>>).
+
+Another way of creating an +Operator+ is to pass in the desired complex matrix, as shown in the following listing:
+
+[source,python]
+----
+from qiskit.quantum_info import Operator
+
+op_XI = Operator([[0, 0, 1, 0],
+                  [0, 0, 0, 1],
+                  [1, 0, 0, 0],
+                  [0, 1, 0, 0]])
+print(op_XI.data)
+
+output:
+  [[0.+0.j 0.+0.j 1.+0.j 0.+0.j]
+   [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
+   [1.+0.j 0.+0.j 0.+0.j 0.+0.j]
+   [0.+0.j 1.+0.j 0.+0.j 0.+0.j]]
+----
+
+Yet another way of creating an +Operator+ is to pass a +Pauli+ instance (see <<using_pauli_class>>):
+
+[source,python]
+----
+from qiskit.quantum_info import Operator, Pauli
+
+op_XI = Operator(Pauli('XI'))
+print(op_XI.data)
+
+output:
+  [[0.+0.j 0.+0.j 1.+0.j 0.+0.j]
+   [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
+   [1.+0.j 0.+0.j 0.+0.j 0.+0.j]
+   [0.+0.j 1.+0.j 0.+0.j 0.+0.j]]
+----
+
+Notice that the three previous examples defined the same operator because their underlying matrices are identical. An additional way of creating an +Operator+ is to pass an +Instruction+ or +Gate+ object (see <<instructions_and_gates>>), as shown in the following code snippet:
+
+[source,python]
+----
+from qiskit.quantum_info import Operator
+from qiskit.circuit.library.standard_gates \
+                         import CPhaseGate
+import numpy as np
+
+op_CP = Operator(CPhaseGate(np.pi / 4))
+print(op_CP.data)
+
+output:
+  [[1.+0.j 0.+0.j 0.+0.j 0.+0.j]
+   [0.+0.j 1.+0.j 0.+0.j 0.+0.j]
+   [0.+0.j 0.+0.j 1.+0.j 0.+0.j]
+   [0.+0.j 0.+0.j 0.+0.j 0.70710678+0.70710678j]]
+----
+
+The +CPhaseGate+ used in the previous example may be seen in <<cphasegate_class>>.
+
+Tables <<operator_methods_table, 5-7>> and <<operator_attributes_table, 5-8>> describe some of the methods and attributes in the +Operator+ class.
+
+[[operator_methods_table]]
+.Some +Operator+ methods
+[options="header"]
+|=======
+|Method name|Description
+|+adjoint+|Returns the adjoint of the operator
+|+compose+|Returns the result of left-multiplying this operator with a supplied +Operator+
+|+conjugate+|Returns the complex conjugate of the operator
+|+copy+|Returns a copy of the +Operator+
+|+dot+|Returns the result of right-multiplying this operator with a supplied +Operator+
+|+equiv+|Returns a Boolean indicating whether a supplied [.keep-together]#+Operator+# is equivalent to this one, up to a global phase
+|+expand+|Returns the reverse-order tensor product with another +Operator+
+|+from_label+|Returns a tensor product of single-qubit operators among the following: `I`, `X`, `Y`, `Z`, `H`, `S`, `T`, `0`, `1`, `+`, `-`, `r`, [.keep-together]#and `l`#
+|+is_unitary+|Returns a Boolean indicating whether this operator is a unitary matrix
+|+power+|Returns an +Operator+ raised to the supplied power
+|+tensor+|Returns the tensor product with another +Operator+
+|+to_instruction+|Returns this operator converted to a +UnitaryGate+
+|+transpose+|Returns the transpose of the operator
+|=======
+
+[[operator_attributes_table]]
+.Some +Operator+ attributes
+[options="header"]
+|=======
+|Attribute name|Description
+|+data+|Contains the operator's complex matrix
+|+dim+|Contains the dimensions of the operator's complex matrix
+|+num_qubits+|Contains the number of qubits in the operator, or None.
+|=======
+
+[[using_pauli_class]]
+==== Using the Pauli Class
+
+The +Pauli+ class represents a multiqubit Pauli operator in which each qubit is an X, Y, Z, or I Pauli matrix. A +Pauli+ may be instantiated in several ways, the most common of which is to pass in a string containing Pauli operators preceded by an optional phase coefficient:
+
+[source,python]
+----
+from qiskit.quantum_info import Pauli
+
+pauli_piXZ = Pauli('-XZ')
+print(pauli_piXZ.to_matrix())
+
+output:
+  [[ 0.+0.j  0.+0.j -1.+0.j  0.+0.j]
+   [ 0.+0.j  0.+0.j  0.+0.j  1.-0.j]
+   [-1.+0.j  0.+0.j  0.+0.j  0.+0.j]
+   [ 0.+0.j  1.-0.j  0.+0.j  0.+0.j]]
+----
+
+Another way of creating a +Pauli+ is to pass in a +QuantumCircuit+ instance that contains only Pauli gates (X, Y, Z, I), as shown in the following code snippet:
+
+[source,python]
+----
+from qiskit import QuantumCircuit
+from qiskit.quantum_info import Pauli
+
+qc = QuantumCircuit(2)
+qc.z(0)
+qc.x(1)
+
+pauli_XZ = Pauli(qc)
+print(pauli_XZ.equiv(Pauli('-XZ')))
+
+output:
+  True
+----
+
+Notice that the previous two examples produced equivalent Pauli operators, as they differ only by a global phase.
+
+Tables <<pauli_methods_table, 5-9>> and <<pauli_attributes_table, 5-10>> describe some of the methods and attributes in the +Pauli+ class.
+
+[[pauli_methods_table]]
+.Some +Pauli+ methods
+[options="header"]
+|=======
+|Method name|Description
+|+adjoint+|Returns the adjoint of the Pauli
+|+commutes+|Returns a Boolean indicating whether a supplied Pauli commutes with this one
+|+compose+|Returns the result of left-multiplying this Pauli with a supplied Pauli.
+|+conjugate+|Returns the complex conjugate of the Pauli
+|+copy+|Returns a copy of the Pauli
+|+dot+|Returns the result of right-multiplying this Pauli with a supplied Pauli
+|+equiv+|Returns a Boolean indicating whether a supplied Pauli is equivalent to this one, up to a global phase
+|+expand+|Returns the reverse-order tensor product with another Pauli
+|+inverse+|Returns the inverse of the Pauli
+|+power+|Returns a Pauli raised to the supplied power
+|+tensor+|Returns the tensor product with another Pauli
+|+to_label+|Returns this Pauli converted to string label containing an optional phase, and Pauli gates X, Y, Z, I
+|+to_matrix+|Returns this Pauli as a complex matrix
+|+transpose+|Returns the transpose of the Pauli
+|=======
+
+[[pauli_attributes_table]]
+.Some +Pauli+ attributes
+[options="header"]
+|=======
+|Attribute name|Description
+|+dim+|Contains the dimensions of the Pauli's complex matrix
+|+num_qubits+|Contains the number of qubits in the Pauli, or None
+|+phase+|Contains an integer that represent the phase of the Pauli
+|=======
+
+
+=== Using Quantum Information Channels
+
+The +qiskit.quantum_info+ module contains a few classes, shown in <<quantum_info_channels_table>>, that represent quantum information channels.
+
+[[quantum_info_channels_table]]
+.Classes that represent channels in the +qiskit.quan&#x2060;tum&#x200b;_info+ module
+[options="header"]
+|=======
+|Class name|Description
+|+Choi+|Choi-matrix representation of a quantum channel
+|+SuperOp+|Superoperator representation of a quantum channel
+|+Kraus+|Kraus representation of a quantum channel
+|+Stinespring+|Stinespring representation of a quantum channel
+|+Chi+|Pauli basis Chi-matrix representation of a quantum channel
+|+PTM+|Pauli Transfer Matrix (PTM) representation of a quantum channel
+|=======
+
+We'll focus on a representative of these, namely the +Kraus+ class, to model a noisy quantum channel whose qubits flip about 10% of the time. In the following code snippet, a +Kraus+ instance is created with a matrix that models this bit-flip behavior and is appended to a quantum circuit:
+
+[source,python]
+----
+from qiskit import QuantumCircuit
+from qiskit.quantum_info import Kraus
+import numpy as np
+
+noise_ops = [np.sqrt(0.9) * np.array([[1, 0],
+                                      [0, 1]]),
+             np.sqrt(0.1) * np.array([[0, 1],
+                                      [1, 0]])]
+kraus = Kraus(noise_ops)
+
+qc = QuantumCircuit(2)
+qc.append(kraus, [0])
+qc.append(kraus, [1])
+qc.measure_all()
+qc.draw()
+----
+
+The resulting circuit is shown in <<kraus_circuit_image>>.
+
+[[kraus_circuit_image]]
+.Example quantum circuit containing +Kraus+ quantum channels
+image::images/qkpg_0503.png[""]
+
+In the following code snippet, we'll use an +aer_simulator+ (see <<aersimulator_hold_measurements>>) to run the circuit, followed by printing the measurement results:
+
+[source,python]
+----
+from qiskit import Aer, transpile
+
+backend = Aer.get_backend("aer_simulator")
+tqc = transpile(qc, backend)
+job = backend.run(tqc, shots=1000)
+result = job.result()
+counts = result.get_counts(tqc)
+print(counts)
+
+output:
+  {'11': 8, '01': 90, '00': 818, '10': 84}
+----
+
+Notice that the measurements are approximately what would be expected from each qubit having a 0.1 probability of flipping.
+
+=== Using Quantum Information Measures
+
+The +qiskit.quantum_info+ module contains several functions, shown in <<quantum_info_measures_table>>, that return various measurements values.
+
+[[quantum_info_measures_table]]
+.Functions that return various measurements values in the +qiskit.quantum_info+ module
+[options="header"]
+|=======
+|Function name|Description
+|+average_gate_fidelity+|Returns the average gate fidelity of a noisy quantum channel
+|+process_fidelity+|Returns the process fidelity of a noisy quantum channel
+|+gate_error+|Returns the gate error of a noisy quantum channel
+|+diamond_norm+|Returns the diamond norm of the input quantum channel object
+|+state_fidelity+|Returns the state fidelity between two quantum states
+|+purity+|Returns the purity of a quantum state
+|+concurrence+|Returns the concurrence of a quantum state
+|+entropy+|Returns the von-Neumann entropy of a quantum state
+|+entanglement_of_formation+|Returns the entanglement of formation of quantum state
+|+mutual_information+|Returns the mutual information of a bipartite state
+|=======
+
+We'll focus on one representative of these, namely the +state_fidelity+ function.
+
+
+==== Using the state_fidelity Function
+
+The +state_fidelity()+ function takes two +Statevector+ or [.keep-together]#+DensityMatrix+# instances and returns the state fidelity between them. In the following code snippet, the state fidelity of a one-qubit statevector in equal superposition has an 85% state fidelity with a statevector whose phase is subsequently rotated by π/8 radians:
+
+[source,python]
+----
+from qiskit.quantum_info import Statevector, \
+                    Operator, state_fidelity
+
+sv_a = Statevector.from_label('+')
+sv_b = sv_a.evolve(Operator.from_label('T'))
+print(state_fidelity(sv_a, sv_b))
+
+output:
+  0.8535533905932733
+----
+
+
+
+
+
+
+
