@@ -18,7 +18,7 @@ GPT is a type of neural language model that uses a transformer architecture to g
 
 === Generating tables of information
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut euismod neque quis nisl suscipit, id scelerisque nibh maximus.. Nulla facilisi. Maecenas euismod enim non purus tincidunt, a ultricies ligula mollis. Morbi consectetur condimentum lectus, sed scelerisque ante elementum id. Quisque ac nibh a lorem bibendum tincidunt. Ut ut arcu non purus ullamcorper faucibus eu eu enim. Ut tempus tempus pretium. Etiam dignissim metus id orci efficitur, non posuere dui hendrerit. Proin convallis elit at ex luctus, id mollis dolor congue. Bugs Bunny semper eligendi at, eu mel dolorem offendit.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut euismod neque quis nisl suscipit, id scelerisque nibh maximus. Nulla facilisi. Maecenas euismod enim non purus tincidunt, a ultricies ligula mollis. Morbi consectetur condimentum lectus, sed scelerisque ante elementum id. Quisque ac nibh a lorem bibendum tincidunt. Ut ut arcu non purus ullamcorper faucibus eu eu enim. Ut tempus tempus pretium. Etiam dignissim metus id orci efficitur, non posuere dui hendrerit. Proin convallis elit at ex luctus, id mollis dolor congue. Bugs Bunny semper eligendi at, eu mel dolorem offendit.
 
 ==== Playground: OpenAI Spreadsheet creator example
 
